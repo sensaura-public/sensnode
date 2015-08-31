@@ -1,0 +1,1 @@
+Provides a common development platform for SensNode wireless sensor modules.
