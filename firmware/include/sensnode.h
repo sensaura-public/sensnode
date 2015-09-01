@@ -252,6 +252,14 @@ extern I2C i2c;
 // pins may no longer be used as general digital IO.
 //---------------------------------------------------------------------------
 
+// Bit masks for SPI transfer modes
+#define MSB_FIRST     0x04
+#define LSB_FIRST     0x00
+#define POLARITY_HIGH 0x02
+#define POLARITY_LOW  0x00
+#define PHASE_HIGH    0x01
+#define PHASE_LOW     0x00
+
 /** SPI interface
  *
  * An implementation that uses the hardware interface on the processor is
@@ -311,10 +319,77 @@ class SPI {
 // The primary SPI interface for the board (using D5 = MISO, D6 = MOSI, D7 = CLK)
 extern SPI spi;
 
+/** Software SPI implementation
+ *
+ * This class provides a bit-banged implementation of the SPI interface on
+ * arbitrary digital pins. It can be used with any driver that expects an
+ * SPI interface.
+ */
+class SoftSPI : public SPI {
+  private:
+    DIGITAL_PIN m_miso;
+    DIGITAL_PIN m_mosi;
+    DIGITAL_PIN m_sck;
+    int         m_mode;
+
+  public:
+    /** Constructor
+     *
+     * Assign the pins to use for communication. The constructor will configure
+     * the pins during initialisation.
+     */
+    SoftSPI(DIGITAL_PIN miso, DIGITAL_PIN mosi, DIGITAL_PIN sck);
+
+    /** Initialise the SPI interface with the specific mode
+     *
+     * This method may be called multiple times to change the operating mode.
+     * The mode values supported are:
+     *
+     * Mode CPOL CPHA
+     *  0    0    0
+     *  1    0    1
+     *  2    1    0
+     *  3    1    1
+     */
+    virtual bool init(int mode = 0);
+
+    /** Write a sequence of bytes to the SPI interface
+     *
+     * This method assumes the target device has been selected by the caller.
+     *
+     * @param pData the buffer containing the data to write
+     * @param count the number of bytes to write
+     */
+    virtual void write(const uint8_t *pData, int count);
+
+    /** Read a sequence of bytes from the SPI interface
+     *
+     * This method assumes the target device has been selected by the caller.
+     * During the read the call will keep MOSI at 0.
+     *
+     * @param pData pointer to a buffer to receive the data
+     * @param count the number of bytes to read.
+     */
+    virtual void read(uint8_t *pData, int count);
+
+    /** Read and write to the SPI interface
+     *
+     * This method assumes the target device has been selected by the caller.
+     *
+     * @param pOutput a buffer containing the bytes to write to the SPI port
+     * @param pInput a buffer to receive the bytes read from the SPI port
+     * @param count the number of bytes to transfer. Both buffers must be at
+     *        least this size.
+     */
+    virtual void readWrite(const uint8_t *pOutput, uint8_t *pInput, int count);
+  }
+
 //---------------------------------------------------------------------------
 // Helper functions and classes
 //---------------------------------------------------------------------------
 
+/** A simple stream interface to write data
+ */
 class OutputStream {
   public:
     /** Write a single character to the stream
@@ -433,6 +508,40 @@ uint16_t crcByte(uint16_t crc, uint8_t data);
  * @return the updated CRC value.
  */
 uint16_t crcData(uint16_t crc, const uint8_t *pData, int length);
+
+/** Shift data out using clocked transfer
+ *
+ * @param data the pin to use for the data transfer
+ * @param clock the pin to use for the clock
+ * @param mode the transfer mode (phase and polarity)
+ * @param value the value to send
+ * @param bits the number of bits to send
+ */
+void shiftOut(DIGITAL_PIN data, DIGITAL_PIN clock, int mode, uint32_t value, int bits);
+
+/** Shift data in using a clocked transfer
+ *
+ * @param data the pin to use for the data transfer
+ * @param clock the pin to use for the clock
+ * @param mode the transfer mode (phase and polarity)
+ * @param bits the number of bits to send
+ *
+ * @return the data value received
+ */
+uint32_t shiftIn(DIGITAL_PIN data, DIGITAL_PIN clock, int mode, int bits);
+
+/** Exchange data in using a clocked transfer
+ *
+ * @param in the pin to use for input data
+ * @param out the pin to use for output data
+ * @param clock the pin to use for the clock
+ * @param mode the transfer mode (phase and polarity)
+ * @param value the value to send
+ * @param bits the number of bits to send
+ *
+ * @return the data value received
+ */
+uint32_t shiftInOut(DIGITAL_PIN in, DIGITAL_PIN out, DIGITAL_PIN clock, int mode, uint32_t value, int bits);
 
 //---------------------------------------------------------------------------
 // Application interface
