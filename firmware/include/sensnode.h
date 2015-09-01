@@ -312,6 +312,129 @@ class SPI {
 extern SPI spi;
 
 //---------------------------------------------------------------------------
+// Helper functions and classes
+//---------------------------------------------------------------------------
+
+class OutputStream {
+  public:
+    /** Write a single character to the stream
+     *
+     * @param ch the character to write.
+     *
+     * @return true if the write was successful
+     */
+    virtual bool write(char ch);
+
+    /** Write a sequence of bytes to the ouput stream
+     *
+     * @param cszString pointer to the buffer containing the data to write
+     * @param length the number of bytes to write. If this is less than zero
+     *               the string is assumed to be NUL terminated.
+     *
+     * @return the number of bytes written. This may be less than requested.
+     */
+    int write(const char *cszString, int length = -1);
+
+    /** Write a numeric value in hex
+     *
+     * @param value the value to write
+     * @param digits the minimum number of digits to use.
+     *
+     * @return the number of characters written
+     */
+    int writeHex(uint32_t value, int digits = 0);
+
+    /** Write a numeric value in decimal
+     *
+     * @param value the value to write
+     *
+     * @return the number of characters written
+     */
+    int writeInt(uint32_t value);
+  };
+
+/** Print a formatted string
+ *
+ * This function supports a subset of the 'printf' string formatting syntax.
+ * Allowable insertion types are:
+ *
+ *  %% - Display a % character. There should be no entry in the variable
+ *       argument list for this entry.
+ *  %u - Display an unsigned integer in decimal. The matching argument may
+ *       be any 16 bit value.
+ *  %U - Display an unsigned integer in decimal. The matching argument may
+ *       be any 32 bit value.
+ *  %x - Display an unsigned integer in hexadecimal. The matching argument may
+ *       be any 16 bit value.
+ *  %X - Display an unsigned integer in hexadecimal. The matching argument may
+ *       be any 32 bit value.
+ *  %c - Display a single ASCII character. The matching argument may be any 8
+ *       bit value.
+ *  %s - Display a NUL terminated string from RAM. The matching argument must
+ *       be a pointer to a RAM location.
+ *
+ * @param pStream pointer to the output stream to write to
+ * @param cszString pointer to a nul terminated format string.
+ *
+ * @return the number of character actually printed.
+ */
+int fprintf(OutputStream *pStream, const char *cszString, ...);
+
+/** Print a formatted string
+ *
+ * This function supports a subset of the 'printf' string formatting syntax.
+ * Allowable insertion types are:
+ *
+ *  %% - Display a % character. There should be no entry in the variable
+ *       argument list for this entry.
+ *  %u - Display an unsigned integer in decimal. The matching argument may
+ *       be any 32 bit value.
+ *  %x - Display an unsigned integer in hexadecimal. The matching argument may
+ *       be any 32 bit value.
+ *  %b - Display a single byte in hexadecimal.
+ *  %c - Display a single ASCII character. The matching argument may be any 8
+ *       bit value.
+ *  %s - Display a NUL terminated string from RAM. The matching argument must
+ *       be a pointer to a RAM location.
+ *
+ * @param szBuffer pointer to the buffer to place the string in
+ * @param length the size of the buffer.
+ * @param cszString pointer to a nul terminated format string in RAM.
+ *
+ * @return the number of characters (excluding the terminating NUL) that
+ *         were written. If this value is equal to length the resulting
+ *         string will not be NUL terminated.
+ */
+int sprintf(char *szBuffer, int length, const char *cszString, ...);
+
+/** Initialise the CRC calculation
+ *
+ * Initialises the CRC value prior to processing data.
+ *
+ * @return the initial CRC value.
+ */
+uint16_t crcInit();
+
+/** Update the CRC value with an additional data byte.
+ *
+ * @param crc the current CRC value
+ * @param data the data byte to add to the calculation
+ *
+ * @return the updated CRC value.
+ */
+uint16_t crcByte(uint16_t crc, uint8_t data);
+
+/** Add a sequence of bytes from a buffer.
+ *
+ * @param crc the current CRC value
+ * @param pData pointer to the memory buffer
+ * @param length the number of bytes to process.
+ *
+ * @return the updated CRC value.
+ */
+uint16_t crcData(uint16_t crc, const uint8_t *pData, int length);
+
+//---------------------------------------------------------------------------
 // Application interface
 //---------------------------------------------------------------------------
 
