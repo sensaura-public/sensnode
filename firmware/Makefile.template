@@ -1,0 +1,47 @@
+# Makefile template for SensNode projects
+#----------------------------------------------------------------------------
+# 02-Sep-2015 ShaneG
+#
+# A common Makefile for Sensnode projects. In general all you need to do is
+# set the target and output file name at the start of the file and the file
+# will build all .cpp, .c and .S sources in the directory for you.
+#----------------------------------------------------------------------------
+TARGET  ?= lpc1114
+PROGRAM ?= sensnode
+
+# Where to find things
+INCDIR = sensnode/include
+LIBDIR = sensnode/lib/$(TARGET)
+
+# What tools to use
+CC  = arm-none-eabi-gcc
+CXX = arm-none-eabi-g++
+AS  = arm-none-eabi-as
+LD  = arm-none-eabi-ld
+
+# Basic configuration
+CPPFLAGS = -mcpu=cortex-m0 -mthumb -g -I$(INCDIR)
+LIBSPEC  = -L $(LIBDIR) -lsensnode
+
+# Files we want
+OBJECTS = $(patsubst %.cpp,%.o,$(wildcard *.cpp))
+OBJECTS += $(patsubst %.c,%.o,$(wildcard *.c))
+OBJECTS += $(patsubst %.S,%.o,$(wildcard *.S))
+
+# Target specific definitions
+ifeq (,$(wildcard $(INCDIR)/boards/${TARGET}.mk))
+    $(error No definitions for target $(TARGET))
+endif
+include $(INCDIR)/boards/${TARGET}.mk
+
+all: $(PROGRAM).hex
+
+clean:
+	rm -f *.o *.hex *.map *.elf
+
+$(PROGRAM).hex: $(PROGRAM).elf
+	objcopy -O ihex $(PROGRAM).elf $(PROGRAM).hex
+
+$(PROGRAM).elf: $(OBJECTS)
+	$(LD) $(LIBDIR)/init.o $(OBJECTS) $(LIBSPEC) -T $(INCDIR)/boards/$(TARGET).ld --cref -Map $(PROGRAM).map -nostartfiles -o $(PROGRAM).elf
+
