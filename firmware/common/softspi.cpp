@@ -95,7 +95,7 @@ bool SoftSPI::init(int mode) {
  */
 void SoftSPI::write(const uint8_t *pData, int count) {
   for(int index=0; index<count; index++)
-    shiftOut(m_mosi, m_clk, m_mode, (uint32_t)pData[index], 8);
+    shiftOut(m_mosi, m_sck, m_mode, (uint32_t)pData[index], 8);
   }
 
 /** Read a sequence of bytes from the SPI interface
@@ -108,7 +108,7 @@ void SoftSPI::write(const uint8_t *pData, int count) {
  */
 void SoftSPI::read(uint8_t *pData, int count) {
   for(int index=0; index<count; index++)
-    pData[index] = (uint8_t)(shiftIn(m_miso, m_clk, m_mode, 8) & 0xFF);
+    pData[index] = (uint8_t)(shiftIn(m_miso, m_sck, m_mode, 8) & 0xFF);
   }
 
 /** Read and write to the SPI interface
@@ -122,6 +122,6 @@ void SoftSPI::read(uint8_t *pData, int count) {
  */
 void SoftSPI::readWrite(const uint8_t *pOutput, uint8_t *pInput, int count) {
   for(int index=0; index<count; index++)
-    pInput[index] = (uint8_t)(shiftInOut(m_miso, m_mosi, m_clk, m_mode, pOutput[index], 8) & 0xFF);
+    pInput[index] = (uint8_t)(shiftInOut(m_miso, m_mosi, m_sck, m_mode, pOutput[index], 8) & 0xFF);
   }
 

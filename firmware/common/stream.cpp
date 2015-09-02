@@ -39,7 +39,7 @@ int OutputStream::write(const char *cszString, int length) {
         count++;
       }
     }
-  return count
+  return count;
   }
 
 /** Write a numeric value in hex
@@ -64,7 +64,7 @@ int OutputStream::writeInt(uint32_t value) {
   // Special case for 0
   if(value==0) {
     write('0');
-    return;
+    return 1;
     }
   // Emit the value, skip leading zeros
   for(uint16_t divisor = 10000; divisor > 0; divisor = divisor / 10) {

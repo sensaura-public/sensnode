@@ -382,7 +382,7 @@ class SoftSPI : public SPI {
      *        least this size.
      */
     virtual void readWrite(const uint8_t *pOutput, uint8_t *pInput, int count);
-  }
+  };
 
 //---------------------------------------------------------------------------
 // Helper functions and classes

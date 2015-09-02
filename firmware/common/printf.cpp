@@ -82,7 +82,7 @@ static bool _printf(OutputStream *pStream, int& written, char ch1, char ch2, va_
       }
     }
   else {
-    if(pStream.write(ch1))
+    if(pStream->write(ch1))
       written++;
     skip = false;
     }
@@ -119,7 +119,7 @@ static bool _printf(OutputStream *pStream, int& written, char ch1, char ch2, va_
  *
  * @return the number of character actually printed.
  */
-int fprintf(OutputStream *pStream, const char *cszString, ...);
+int fprintf(OutputStream *pStream, const char *cszString, ...) {
   va_list args;
   va_start(args, cszString);
   char ch1, ch2 = *cszString;
