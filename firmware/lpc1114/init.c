@@ -1,5 +1,5 @@
 // Initialization and interrupt vectors for the LPC1114 microcontroller
-// No claims are made as to the suitability of this code for any 
+// No claims are made as to the suitability of this code for any
 // purpose whatsoever.  Use at your own risk!
 // Does not include initialization for C++ global/static objects
 // so probably best to use this with C projects for now.
@@ -7,7 +7,7 @@
 // http://eleceng.dit.ie/frank and follow the links
 // Author: Frank Duignan
 
-#include "lpc111x.h"
+#include <platform.h>
 void init(void);
 void clock_init();
 void Default_Handler(void);
@@ -19,10 +19,10 @@ extern unsigned char  INIT_DATA_END;
 extern unsigned char  BSS_START;
 extern unsigned char  BSS_END;
 extern void isr_spi1(void);
-// the section "vectors" is placed at the beginning of flash 
+// the section "vectors" is placed at the beginning of flash
 // by the linker script
 const void * Vectors[] __attribute__((section(".vectors"))) ={
-	(void *)0x10001000, 	/* Top of stack */ 
+	(void *)0x10001000, 	/* Top of stack */
 	init,   			/* Reset Handler */
 	Default_Handler,	/* NMI */
 	Default_Handler,	/* Hard Fault */
@@ -37,7 +37,7 @@ const void * Vectors[] __attribute__((section(".vectors"))) ={
 	0,                 	/* Reserved */
 	0,                 	/* Reserved */
 	Default_Handler,   	/* PendSV */
-	SysTick,     		/* SysTick */		
+	SysTick,     		/* SysTick */
 /* External interrupt handlers follow */
 	Default_Handler, 	/* PIO0_0 */
 	Default_Handler, 	/* PIO0_1 */
@@ -82,7 +82,7 @@ void clock_init()
 	SYSPLLCTRL = (3 << 0) | (1 << 5); // set divisors/multipliers
 	PDRUNCFG &= ~BIT7; // Power up the PLL.
 	SYSPLLCLKUEN = 1; // inform PLL of update
-	
+
 	MAINCLKSEL = 3; // Use PLL as main clock
 	MAINCLKUEN = 1; // Inform core of clock update
 }
