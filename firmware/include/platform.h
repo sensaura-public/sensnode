@@ -10,7 +10,8 @@
 #define __PLATFORM_H
 
 // Required definitions
-#include <sensnode.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 // Define some bitmasks
 #define BIT0 (1 << 0)
