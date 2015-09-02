@@ -543,26 +543,5 @@ uint32_t shiftIn(DIGITAL_PIN data, DIGITAL_PIN clock, int mode, int bits);
  */
 uint32_t shiftInOut(DIGITAL_PIN in, DIGITAL_PIN out, DIGITAL_PIN clock, int mode, uint32_t value, int bits);
 
-//---------------------------------------------------------------------------
-// Application interface
-//---------------------------------------------------------------------------
-
-/** User application initialisation
- *
- * The library will call this function once at startup to allow the user
- * application to do any initialisation it needs. At the time this function
- * is called all IO pins will have been set to their default states and the
- * network subsystem initialised (if not yet connected).
- */
-void init();
-
-/** User application loop
- *
- * The library repeatedly calls this function in an endless loop. The function
- * will generally be implemented as a state machine and take care to minimise
- * the amount of time spent in the function itself.
- */
-void loop();
-
 #endif /* __SENSNODE_H */
 

@@ -13,6 +13,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Define some bitmasks
 #define BIT0 (1 << 0)
 #define BIT1 (1 << 1)
@@ -71,6 +75,31 @@
 #  include <boards/xmc1100>
 #else
 #  error "Unsupported or undefined target platform"
+#endif
+
+//---------------------------------------------------------------------------
+// Application interface
+//---------------------------------------------------------------------------
+
+/** User application initialisation
+ *
+ * The library will call this function once at startup to allow the user
+ * application to do any initialisation it needs. At the time this function
+ * is called all IO pins will have been set to their default states and the
+ * network subsystem initialised (if not yet connected).
+ */
+void init();
+
+/** User application loop
+ *
+ * The library repeatedly calls this function in an endless loop. The function
+ * will generally be implemented as a state machine and take care to minimise
+ * the amount of time spent in the function itself.
+ */
+void loop();
+
+#ifdef __cplusplus
+} /* extern "C" */
 #endif
 
 #endif /* __PLATFORM_H */
