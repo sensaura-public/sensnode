@@ -36,7 +36,10 @@ include $(TARGET)/Makefile.inc
 all: $(LIBNAME) $(INITOBJ)
 
 clean:
-	rm -f $(OBJECTS) $(LIBNAME) $(INITOBJ)
+	rm -f $(OBJECTS)
+
+superclean: clean
+	rm -f $(LIBNAME) $(INITOBJ)
 
 #----------------------------------------------------------------------------
 # Compilation and linking rules
