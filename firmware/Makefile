@@ -32,14 +32,18 @@ ifeq (,$(wildcard $(TARGET)/Makefile.inc))
 endif
 include $(TARGET)/Makefile.inc
 
+# Add board specific object files
+OBJECTS += $(patsubst %.cpp,%.o,$(wildcard $(TARGET)/*.cpp))
+
 # Master rules
 all: $(LIBNAME) $(INITOBJ)
 
 clean:
 	rm -f $(OBJECTS)
 
-superclean: clean
-	rm -f $(LIBNAME) $(INITOBJ)
+superclean:
+	rm -f `find . -name '*.o'`
+	rm -f `find . -name '*.a'`
 
 #----------------------------------------------------------------------------
 # Compilation and linking rules
