@@ -16,9 +16,17 @@ extern "C" void (**__init_array_end)();
 /** Program entry point
  */
 int main() {
+  // First configure and latch our power pin.
+  digitalInit(PIN_LATCH, OUTPUT);
+  digitalWrite(PIN_LATCH, true);
   // Call all the constructors
   for(void (**p)() = __init_array_start; p < __init_array_end; ++p)
     (*p)();
+  // Set up the rest of the power head pins
+  digitalInit(PIN_INDICATOR, OUTPUT);
+  digitalWrite(PIN_INDICATOR, false);
+  digitalInit(PIN_ACTIVITY, INPUT);
+  digitalInit(PIN_POWER, INPUT);
   // TODO: Internal setup
   // Application setup
   setup();
