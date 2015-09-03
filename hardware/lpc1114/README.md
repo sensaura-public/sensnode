@@ -3,7 +3,7 @@ This directory contains the design files for an LPC1114 based SensNode.
 CPU:     LPC1114 (ARM Cortex M0)
 Flash:   32K
 RAM:     4K
-Speed:   50MHz
+Speed:   48MHz
 Network: NRF24L01 (via shield)
 
 ## Pin Mappings
@@ -26,3 +26,5 @@ Network: NRF24L01 (via shield)
 * IND - P0.8
 * ACT - P0.9
 * ENAB - P0.6
+* PSW - ??
+
