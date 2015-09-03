@@ -5,13 +5,7 @@
 *---------------------------------------------------------------------------*/
 #include <sensnode.h>
 #include <platform.h>
-
-typedef struct {
-  uint8_t m_port  : 1;
-  uint8_t m_pin   : 4;
-  uint8_t m_func  : 2;
-  uint8_t m_iocon : 8;
-  } PINDEF;
+#include "common.h"
 
 /** Assign ports and pin numbers to all defined pins
  */
@@ -33,7 +27,7 @@ static const PINDEF g_pins[] = {
 /** Determine if a pin is valid
  */
 static bool isValidPin(int pin) {
-  if((pin<0)||(pin>PIN_POWER))
+  if((pin<PIN_D0)||(pin>PIN_POWER))
     return false;
   return g_pins[pin].m_pin != 15;
   }

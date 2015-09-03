@@ -72,21 +72,24 @@ bool timeExpired(uint32_t reference, uint32_t duration, TIMEUNIT units);
 //---------------------------------------------------------------------------
 
 /** IO direction
+ *
+ * Direction of IO for digital pins.
  */
 enum IODIR {
-	INPUT,
-	OUTPUT
-};
+  INPUT,
+  OUTPUT
+  };
 
 /** Analog pins
+ *
+ * Each board exposes up to 4 analog pins on the header. Additionally there is
+ * the VBAT analog channel for reading the current battery status.
  */
-enum ANALOG_PIN {
-	A0 = 0,
-	A1,
-	A2,  // NOTE: A2 and A3 are preferred outputs, may not support input
-	A3,
-	VBAT // NOTE: VBAT is not exposed via headers
-};
+enum ANALOG {
+  PIN_A0 = 0, PIN_A1,
+  PIN_A2, PIN_A3,
+  PIN_VBAT // NOTE: VBAT is not exposed via headers
+  };
 
 /** Digital pins
  *
@@ -103,16 +106,13 @@ enum DIGITAL {
 
 /** Initialise an analog pin
  *
- * This function configures an analog pin for input or output (PWM). The
- * function will fail if the pin is not available or does not support the
- * requested direction.
+ * This function configures an analog pin.
  *
  * @param pin the pin to configure
- * @param dir the direction of the pin (input or output)
  *
  * @return true if the pin was configured as requested
  */
-bool analogInit(ANALOG_PIN pin, IODIR dir);
+bool analogInit(int pin);
 
 /** Read an analog value
  *
@@ -121,25 +121,12 @@ bool analogInit(ANALOG_PIN pin, IODIR dir);
  * resolution available is represented in the most significant bits.
  *
  * @param pin the pin to read
- * @param skip the number of samples to skip before averaging.
- * @param average the number of samples to average into the result. This must
- *        be at least 1 (for no averaging).
  *
  * @return the resulting value scaled to a 16 bit resolution. If an error
  *         occurs or the pin has not been configured or is not available the
  *         value of 0 will be returned.
  */
-uint16_t analogRead(ANALOG_PIN pin, int skip, int average);
-
-/** Write an analog value
- *
- * This function adjusts the PWM output on the analog pin to the specified
- * value. The duty cycle is scaled from 0 (value = 0) to 100% (value = 0xffff).
- *
- * @param pin the pin to write to
- * @param value the value to output
- */
-void analogWrite(ANALOG_PIN pin, uint16_t value);
+uint16_t analogRead(int pin);
 
 /** Initialise a pin for digital input or output
  *
