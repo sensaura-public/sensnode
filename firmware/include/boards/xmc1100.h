@@ -18,6 +18,10 @@
 #ifndef __XMC1100_H
 #define __XMC1100_H
 
+// System ticks configuration
+#define TICKS_PER_SECOND 48000000L
+#define TICKS_MAX        0x00ffffffL
+
 #define NVIC_BASE 		0xe000e100
 #define SCS_BASE		0xe000ed00
 #define STK_BASE		0xe000e010

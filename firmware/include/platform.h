@@ -17,6 +17,18 @@
 extern "C" {
 #endif
 
+/** System initialisation function
+ */
+void systemInit();
+
+/** Default interrupt handler
+ */
+void defaultInterruptHandler();
+
+/** Main program
+ */
+int main();
+
 // Define some bitmasks
 #define BIT0 (1 << 0)
 #define BIT1 (1 << 1)
@@ -70,33 +82,12 @@ extern "C" {
 #elif TARGET_STM32F030
 #  include <boards/stm32f030.h>
 #elif TARGET_STM32F070
-#  include <boards/stm32f070>
+#  include <boards/stm32f070.h>
 #elif TARGET_XMC1100
-#  include <boards/xmc1100>
+#  include <boards/xmc1100.h>
 #else
 #  error "Unsupported or undefined target platform"
 #endif
-
-//---------------------------------------------------------------------------
-// Application interface
-//---------------------------------------------------------------------------
-
-/** User application initialisation
- *
- * The library will call this function once at startup to allow the user
- * application to do any initialisation it needs. At the time this function
- * is called all IO pins will have been set to their default states and the
- * network subsystem initialised (if not yet connected).
- */
-void init();
-
-/** User application loop
- *
- * The library repeatedly calls this function in an endless loop. The function
- * will generally be implemented as a state machine and take care to minimise
- * the amount of time spent in the function itself.
- */
-void loop();
 
 #ifdef __cplusplus
 } /* extern "C" */

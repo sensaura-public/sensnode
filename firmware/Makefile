@@ -19,7 +19,8 @@ LD=arm-none-eabi-ld
 AR=arm-none-eabi-ar
 
 # Basic configuration
-CPPFLAGS=-mcpu=cortex-m0 -mthumb -g -Iinclude
+CPPFLAGS = -mcpu=cortex-m0 -mthumb -g -Iinclude -ffunction-sections -mlong-calls -fno-exceptions
+CXXFLAGS =  -fno-rtti
 
 # Files we want
 OBJECTS = $(patsubst %.cpp,%.o,$(wildcard common/*.cpp))
