@@ -20,7 +20,7 @@
  * @param value the value to send
  * @param bits the number of bits to send
  */
-void shiftOut(DIGITAL_PIN data, DIGITAL_PIN clock, int mode, uint32_t value, int bits) {
+void shiftOut(int data, int clock, int mode, uint32_t value, int bits) {
   // TODO: Implement this
   }
 
@@ -33,7 +33,7 @@ void shiftOut(DIGITAL_PIN data, DIGITAL_PIN clock, int mode, uint32_t value, int
  *
  * @return the data value received
  */
-uint32_t shiftIn(DIGITAL_PIN data, DIGITAL_PIN clock, int mode, int bits) {
+uint32_t shiftIn(int data, int clock, int mode, int bits) {
   // TODO: Implement this
   return 0;
   }
@@ -49,7 +49,7 @@ uint32_t shiftIn(DIGITAL_PIN data, DIGITAL_PIN clock, int mode, int bits) {
  *
  * @return the data value received
  */
-uint32_t shiftInOut(DIGITAL_PIN in, DIGITAL_PIN out, DIGITAL_PIN clock, int mode, uint32_t value, int bits) {
+uint32_t shiftInOut(int in, int out, int clock, int mode, uint32_t value, int bits) {
   // TODO: Implement this
   }
 
@@ -59,7 +59,7 @@ uint32_t shiftInOut(DIGITAL_PIN in, DIGITAL_PIN out, DIGITAL_PIN clock, int mode
 
 /** Constructor
  */
-SoftSPI::SoftSPI(DIGITAL_PIN miso, DIGITAL_PIN mosi, DIGITAL_PIN sck) {
+SoftSPI::SoftSPI(int miso, int mosi, int sck) {
   m_miso = miso;
   m_mosi = mosi;
   m_sck = sck;
