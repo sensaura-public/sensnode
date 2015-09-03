@@ -9,6 +9,6 @@
 #include <sensnode.h>
 
 // Create the SPI instance with the appropriate pin mappings.
-static SoftSPI lpcSPI = SoftSPI(D5, D4, D3);
+static SoftSPI lpcSPI = SoftSPI(PIN_D5, PIN_D4, PIN_D3);
 SPI *spi = &lpcSPI;
 

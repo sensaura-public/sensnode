@@ -89,21 +89,17 @@ enum ANALOG_PIN {
 };
 
 /** Digital pins
+ *
+ * Each board exposes 8 digital pins on the header. There are also 4 extra
+ * pins used internally for the action button, indicator LED, power switch
+ * and power latching.
  */
-enum DIGITAL_PIN {
-	D0 = 0,
-	D1,
-	D2,
-	D3,
-	D4,
-	D5,
-	D6,
-	D7,
-	D8, // NOTE: D8 -> D11 are not exposed via headers
-	D9,
-	D10,
-	D11
-};
+enum DIGITAL {
+  PIN_D0 = 0, PIN_D1, PIN_D2, PIN_D3,
+  PIN_D4, PIN_D5, PIN_D6, PIN_D7,
+  // These pins are used internally
+  PIN_INDICATOR, PIN_ACTIVITY, PIN_LATCH, PIN_POWER
+  };
 
 /** Initialise an analog pin
  *
@@ -154,7 +150,7 @@ void analogWrite(ANALOG_PIN pin, uint16_t value);
  * @return true if the pin was configured as requested, false if the pin is
  *         not available or could not be configured.
  */
-bool digitalInit(DIGITAL_PIN pin, IODIR dir, bool pullup);
+bool digitalInit(int pin, IODIR dir, bool pullup = false);
 
 /** Read the current value of the digital pin
  *
@@ -162,14 +158,14 @@ bool digitalInit(DIGITAL_PIN pin, IODIR dir, bool pullup);
  *
  * @return true if the pin is currently 'high', false if 'low'
  */
-bool digitalRead(DIGITAL_PIN pin);
+bool digitalRead(int pin);
 
 /** Write a value to the digital pin
  *
  * @param pin the digital pin to write
  * @param value the new value of the pin - true for 'high', false for 'low'
  */
-void digitalWrite(DIGITAL_PIN pin, bool value);
+void digitalWrite(int pin, bool value);
 
 //---------------------------------------------------------------------------
 // I2C Operations
@@ -327,9 +323,9 @@ extern SPI *spi;
  */
 class SoftSPI : public SPI {
   private:
-    DIGITAL_PIN m_miso;
-    DIGITAL_PIN m_mosi;
-    DIGITAL_PIN m_sck;
+    int m_miso;
+    int m_mosi;
+    int m_sck;
     int         m_mode;
 
   public:
@@ -338,7 +334,7 @@ class SoftSPI : public SPI {
      * Assign the pins to use for communication. The constructor will configure
      * the pins during initialisation.
      */
-    SoftSPI(DIGITAL_PIN miso, DIGITAL_PIN mosi, DIGITAL_PIN sck);
+    SoftSPI(int miso, int mosi, int sck);
 
     /** Initialise the SPI interface with the specific mode
      *
@@ -517,7 +513,7 @@ uint16_t crcData(uint16_t crc, const uint8_t *pData, int length);
  * @param value the value to send
  * @param bits the number of bits to send
  */
-void shiftOut(DIGITAL_PIN data, DIGITAL_PIN clock, int mode, uint32_t value, int bits);
+void shiftOut(int data, int clock, int mode, uint32_t value, int bits);
 
 /** Shift data in using a clocked transfer
  *
@@ -528,7 +524,7 @@ void shiftOut(DIGITAL_PIN data, DIGITAL_PIN clock, int mode, uint32_t value, int
  *
  * @return the data value received
  */
-uint32_t shiftIn(DIGITAL_PIN data, DIGITAL_PIN clock, int mode, int bits);
+uint32_t shiftIn(int data, int clock, int mode, int bits);
 
 /** Exchange data in using a clocked transfer
  *
@@ -541,7 +537,7 @@ uint32_t shiftIn(DIGITAL_PIN data, DIGITAL_PIN clock, int mode, int bits);
  *
  * @return the data value received
  */
-uint32_t shiftInOut(DIGITAL_PIN in, DIGITAL_PIN out, DIGITAL_PIN clock, int mode, uint32_t value, int bits);
+uint32_t shiftInOut(int in, int out, int clock, int mode, uint32_t value, int bits);
 
 //---------------------------------------------------------------------------
 // Application interface
