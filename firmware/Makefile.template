@@ -14,14 +14,17 @@ INCDIR = sensnode/include
 LIBDIR = sensnode/lib/$(TARGET)
 
 # What tools to use
-CC  = arm-none-eabi-gcc
-CXX = arm-none-eabi-g++
-AS  = arm-none-eabi-as
-LD  = arm-none-eabi-ld
+CC   = arm-none-eabi-gcc
+CXX  = arm-none-eabi-g++
+AS   = arm-none-eabi-as
+LD   = arm-none-eabi-ld
+SIZE = arm-none-eabi-size
 
 # Basic configuration
-CPPFLAGS = -mcpu=cortex-m0 -mthumb -g -I$(INCDIR)
+CPPFLAGS = -mcpu=cortex-m0 -mthumb -g -I$(INCDIR) -ffunction-sections -mlong-calls -fno-exceptions
+CXXFLAGS =  -fno-rtti
 LIBSPEC  = -L $(LIBDIR) -lsensnode
+LDFLAGS  = -nostartfiles --gc-sections
 
 # Files we want
 OBJECTS = $(patsubst %.cpp,%.o,$(wildcard *.cpp))
@@ -41,7 +44,8 @@ clean:
 
 $(PROGRAM).hex: $(PROGRAM).elf
 	objcopy -O ihex $(PROGRAM).elf $(PROGRAM).hex
+	@$(SIZE) $(PROGRAM).elf
 
 $(PROGRAM).elf: $(OBJECTS)
-	$(LD) $(LIBDIR)/init.o $(OBJECTS) $(LIBSPEC) -T $(INCDIR)/boards/$(TARGET).ld --cref -Map $(PROGRAM).map -nostartfiles -o $(PROGRAM).elf
+	$(LD) $(LDFLAGS) $(OBJECTS) $(LIBDIR)/init.o $(LIBSPEC) -T $(INCDIR)/boards/$(TARGET).ld --cref -Map $(PROGRAM).map -o $(PROGRAM).elf
 

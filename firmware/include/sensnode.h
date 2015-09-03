@@ -20,10 +20,10 @@
 /** Time units
  */
 typedef enum {
-  TICK        = 0, //!< Raw ticks (processor dependent)
-  MICROSECOND = 1, //!< 1/1000000 of a second
-  MILLISECOND = 2, //!< 1/1000 of a second
-  SECOND      = 3, //!< Whole seconds
+  TICK = 0,    //!< Raw ticks (processor dependent)
+  MICROSECOND, //!< 1/1000000 of a second
+  MILLISECOND, //!< 1/1000 of a second
+  SECOND,      //!< Whole seconds
   } TIMEUNIT;
 
 /** Get the current system tick count
@@ -283,7 +283,7 @@ class SPI {
      *  2    1    0
      *  3    1    1
      */
-    virtual bool init(int mode = 0);
+    virtual bool init(int mode = 0) = 0;
 
     /** Write a sequence of bytes to the SPI interface
      *
@@ -292,7 +292,7 @@ class SPI {
      * @param pData the buffer containing the data to write
      * @param count the number of bytes to write
      */
-    virtual void write(const uint8_t *pData, int count);
+    virtual void write(const uint8_t *pData, int count) = 0;
 
     /** Read a sequence of bytes from the SPI interface
      *
@@ -302,7 +302,7 @@ class SPI {
      * @param pData pointer to a buffer to receive the data
      * @param count the number of bytes to read.
      */
-    virtual void read(uint8_t *pData, int count);
+    virtual void read(uint8_t *pData, int count) = 0;
 
     /** Read and write to the SPI interface
      *
@@ -313,11 +313,11 @@ class SPI {
      * @param count the number of bytes to transfer. Both buffers must be at
      *        least this size.
      */
-    virtual void readWrite(const uint8_t *pOutput, uint8_t *pInput, int count);
+    virtual void readWrite(const uint8_t *pOutput, uint8_t *pInput, int count) = 0;
   };
 
 // The primary SPI interface for the board (using D5 = MISO, D6 = MOSI, D7 = CLK)
-extern SPI spi;
+extern SPI *spi;
 
 /** Software SPI implementation
  *
@@ -542,6 +542,28 @@ uint32_t shiftIn(DIGITAL_PIN data, DIGITAL_PIN clock, int mode, int bits);
  * @return the data value received
  */
 uint32_t shiftInOut(DIGITAL_PIN in, DIGITAL_PIN out, DIGITAL_PIN clock, int mode, uint32_t value, int bits);
+
+//---------------------------------------------------------------------------
+// Application interface
+//---------------------------------------------------------------------------
+
+/** User application initialisation
+ *
+ * The library will call this function once at startup to allow the user
+ * application to do any initialisation it needs. At the time this function
+ * is called all IO pins will have been set to their default states and the
+ * network subsystem initialised (if not yet connected).
+ */
+void setup();
+
+/** User application loop
+ *
+ * The library repeatedly calls this function in an endless loop. The function
+ * will generally be implemented as a state machine and take care to minimise
+ * the amount of time spent in the function itself.
+ */
+void loop();
+
 
 #endif /* __SENSNODE_H */
 

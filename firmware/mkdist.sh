@@ -26,7 +26,7 @@ cd ${BASEDIR}
 make superclean
 for target in ${TARGETS}; do
   make clean
-  make TARGET=${target}
+  make TARGET=${target} || exit 1
 done
 
 # Copy libraries and headers

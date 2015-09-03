@@ -10,6 +10,10 @@
 #ifndef __LPC1114_H
 #define __LPC1114_H
 
+// System ticks configuration
+#define TICKS_PER_SECOND 48000000L
+#define TICKS_MAX        0x00ffffffL
+
 // APB Peripherals
 #define I2C_BASE 		0x40000000
 #define WDT_BASE 		0x40004000
@@ -417,8 +421,8 @@
 #define CPUID		REGISTER_32(SCB_BASE + 0)
 #define ICSR		REGISTER_32(SCB_BASE + 4)
 #define AIRCR		REGISTER_32(SCB_BASE + 0x0c)
-#define SCR			REGISTER_32(SCB_BASE + 0x10)
-#define CCR			REGISTER_32(SCB_BASE + 0x14)
+#define SCR		REGISTER_32(SCB_BASE + 0x10)
+#define CCR		REGISTER_32(SCB_BASE + 0x14)
 #define SHPR2		REGISTER_32(SCB_BASE + 0x1c)
 #define SHPR3		REGISTER_32(SCB_BASE + 0x20)
 
