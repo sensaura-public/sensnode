@@ -26,5 +26,4 @@ Network: NRF24L01 (via shield)
 * IND - P0.8
 * ACT - P0.9
 * ENAB - P0.6
-* PSW - ??
-
+* PSW - P0.10
