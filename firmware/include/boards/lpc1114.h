@@ -10,8 +10,11 @@
 #ifndef __LPC1114_H
 #define __LPC1114_H
 
+// System clock rate
+#define SYSTEM_CLOCK 48000000L
+
 // System ticks configuration
-#define TICKS_PER_SECOND 48000000L
+#define TICKS_PER_SECOND SYSTEM_CLOCK
 #define TICKS_MAX        0x00ffffffL
 
 // APB Peripherals
