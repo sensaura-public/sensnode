@@ -245,7 +245,7 @@ class I2C {
     *
     * @return true if the interface was initialise.
     */
-    virtual bool init();
+    virtual bool init() = 0;
 
     /** Write a bit stream to the I2C device
     *
@@ -257,7 +257,7 @@ class I2C {
     *             MSB order.
     * @param count the number of bits to write.
     */
-    virtual void writeBits(uint8_t address, uint32_t data, int count);
+    virtual void writeBits(uint8_t address, uint32_t data, int count) = 0;
 
     /** Read a bit stream from the I2C device
     *
@@ -270,7 +270,7 @@ class I2C {
     * @return a 32 bit value containing the bits read in the least significant
     *         bits.
     */
-    virtual uint32_t readBits(uint8_t address, int count);
+    virtual uint32_t readBits(uint8_t address, int count) = 0;
 
     /** Write a sequence of byte values to the i2c slave
     *
@@ -278,7 +278,7 @@ class I2C {
     * @param pData pointer to a buffer containing the data to send
     * @param count the number of bytes to transmit
     */
-    virtual void writeBytes(uint8_t address, const uint8_t *pData, int count);
+    virtual void writeBytes(uint8_t address, const uint8_t *pData, int count) = 0;
 
     /** Read a sequence of bytes from the i2c slave
     *
@@ -288,11 +288,11 @@ class I2C {
     *
     * @return the number of bytes read from the slave.
     */
-    virtual int readBytes(uint8_t address, uint8_t *pData, int count);
+    virtual int readBytes(uint8_t address, uint8_t *pData, int count) = 0;
   };
 
 // The primary I2C interface
-extern I2C i2c;
+extern I2C *i2c;
 
 //---------------------------------------------------------------------------
 // SPI Operations
