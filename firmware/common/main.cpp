@@ -12,6 +12,12 @@
 // Battery level cutoff
 static uint16_t g_battery = 0;
 
+// Indicator pattern
+static uint16_t g_pattern = 0;
+static uint8_t  g_patternIdx = 0;
+static bool     g_patternRepeat = false;
+static uint32_t g_patternTimer = 0;
+
 // Static initialisers (constructors, etc)
 extern "C" void (**__init_array_start)();
 extern "C" void (**__init_array_end)();
@@ -22,6 +28,41 @@ extern "C" void (**__init_array_end)();
 
 #define BATTERY_CHECK 60
 #define BATTERY_RETRY 3
+
+/** Reset the indicator
+ *
+ * Sets counts and values back to zero and ensures the LED is off
+ */
+static void resetIndicator() {
+  g_pattern = 0;
+  g_patternIdx = 0;
+  g_patternRepeat = false;
+  g_patternTimer = getTicks();
+  digitalWrite(PIN_INDICATOR, false);
+  }
+
+/** Update the indicator with the next bit in the sequence
+ */
+static void taskIndicator() {
+  static uint32_t timer = 0;
+  if(g_pattern==0)
+    return; // No pattern
+  if(!timeExpired(g_patternTimer, 125, MILLISECOND))
+    return; // Not yet
+  g_patternTimer = getTicks();
+  // Are we at the end?
+  if(g_patternIdx==16) {
+    if(g_patternRepeat)
+      g_patternIdx = 0;
+    else {
+      resetIndicator();
+      return;
+      }
+    }
+  // Set the current bit
+  digitalWrite(PIN_INDICATOR, g_pattern & (0x8000 >> g_patternIdx));
+  g_patternIdx++;
+  }
 
 /** Battery monitoring
  *
@@ -64,6 +105,8 @@ static void taskBattery() {
 static void mainLoop(bool userTask) {
   // Power management checking
   taskBattery();
+  // Indicator display
+  taskIndicator();
   // TODO: Network processing
   // Application loop
   if(userTask)
@@ -85,6 +128,8 @@ int main() {
   digitalInit(PIN_ACTIVITY, INPUT);
   digitalInit(PIN_POWER, INPUT);
   analogInit(PIN_VBAT);
+  // Show we are on (2s indicator LED)
+  indicate(PATTERN_FULL, false);
   // TODO: Internal setup
   // Application setup
   setup();
@@ -97,6 +142,26 @@ int main() {
 //---------------------------------------------------------------------------
 // Public API
 //---------------------------------------------------------------------------
+
+/** Set the output indication sequence
+ *
+ * Every power adapter has an indication LED which is used to provide visual
+ * feedback. This function sets an indication pattern to run on the LED. A
+ * pattern consists of a sequence of 16 LED states (1 = on, 0 = off) which
+ * are stepped through every 125ms giving a total of 2s for each pattern.
+ *
+ * If a pattern is already running it will be terminated at the current step
+ * and the new pattern started instead.
+ *
+ * @param pattern the 16 bit pattern to start.
+ * @param repeat if true the pattern will be repeated until a new pattern is
+ *               set.
+ */
+void indicate(uint16_t pattern, bool repeat) {
+  resetIndicator();
+  g_pattern = pattern;
+  g_patternRepeat = repeat;
+  }
 
 /** Set the battery shutdown limit
  *
