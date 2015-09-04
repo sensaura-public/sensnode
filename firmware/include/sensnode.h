@@ -12,9 +12,10 @@
 
 // Bring in required definitions
 #include <stdint.h>
+#include <stdlib.h>
 
 //---------------------------------------------------------------------------
-// Timing
+// Timing and power management
 //---------------------------------------------------------------------------
 
 /** Time units
@@ -67,6 +68,73 @@ uint32_t timeElapsed(uint32_t start, uint32_t end, TIMEUNIT units);
  */
 bool timeExpired(uint32_t reference, uint32_t duration, TIMEUNIT units);
 
+/** Set the battery shutdown limit
+ *
+ * Set the ADC reading at which the battery level will trigger a shutdown. The
+ * value at power up is 0 (which means never). The actual value will depend on
+ * the power source connected and the type of battery. This is intended to
+ * protect against draining LiION batteries to too low a level or to shutdown
+ * if an unreliable power supply will impact sensor readings.
+ *
+ * @param level the ADC reading to shutdown at.
+ */
+void setBatteryLimit(uint16_t level);
+
+/** Power down the device
+ *
+ * This function will completely power down the device. It is usually only
+ * called in situations where continuing to operate would be dangerous or
+ * possibly damage the sensor.
+ */
+void shutdown();
+
+/** Delay the invocation of the application loop for a specified duration
+ *
+ * This function will block until the specified time period has elapsed but
+ * background tasks (network operations, battery monitoring, etc) will continue.
+ *
+ * @param duration the amount of time to delay for
+ * @param units the units the duration is specified in
+ */
+void delay(uint32_t duration, TIMEUNIT units);
+
+/** Put the processor into sleep mode
+ *
+ * This function puts the CPU into sleep mode for the specified period of
+ * time to conserve power. While the processor is sleeping other background
+ * tasks (network operations, battery monitoring, etc) will also be paused.
+ *
+ * If the processor does not support sleep mode (or doesn't have an RTC to
+ * trigger waking) this function will behave like the 'delay()' function.
+ *
+ * @param duration the amount of time to delay for
+ * @param units the units the duration is specified in
+ */
+void sleep(uint32_t duration, TIMEUNIT units);
+
+/** Set the output indication sequence
+ *
+ * Every power adapter has an indication LED which is used to provide visual
+ * feedback. This function sets an indication pattern to run on the LED. A
+ * pattern consists of a sequence of 16 LED states (1 = on, 0 = off) which
+ * are stepped through every 125ms giving a total of 2s for each pattern.
+ *
+ * If a pattern is already running it will be terminated at the current step
+ * and the new pattern started instead.
+ *
+ * @param pattern the 16 bit pattern to start.
+ * @param repeat if true the pattern will be repeated until a new pattern is
+ *               set.
+ */
+void indicate(uint16_t pattern, bool repeat);
+
+// Some standard patterns
+#define PATTERN_NONE   0b0000000000000000
+#define PATTERN_SLOW_2 0b1111000011110000
+#define PATTERN_FAST_2 0b1100110000000000
+#define PATTERN_FAST_3 0b1100110011000000
+#define PATTERN_FULL   0b1111111111111111
+
 //---------------------------------------------------------------------------
 // GPIO interface
 //---------------------------------------------------------------------------
@@ -102,6 +170,15 @@ enum DIGITAL {
   PIN_D4, PIN_D5, PIN_D6, PIN_D7,
   // These pins are used internally
   PIN_INDICATOR, PIN_ACTIVITY, PIN_LATCH, PIN_POWER
+  };
+
+/** PWM frequency
+ *
+ * The interface provides a single PWM output pin which may be configured
+ * for different frequencies. The actual frequencies are defined by the board.
+ */
+enum FREQUENCY {
+  SLOW = 0, NORMAL, FAST
   };
 
 /** Initialise an analog pin
@@ -154,6 +231,20 @@ bool digitalRead(int pin);
  */
 void digitalWrite(int pin, bool value);
 
+/** Initialise the PWM pin
+ *
+ * @param freq the frequency to run the PWM output at
+ *
+ * @return true if PWM is available, false if not.
+ */
+bool pwmInit(FREQUENCY freq);
+
+/** Set the PWM duty cycle
+ *
+ * @param duty the duty cycle from 0 (always low) to 0xff (always on).
+ */
+void pwmDuty(uint8_t cycle);
+
 //---------------------------------------------------------------------------
 // I2C Operations
 //
@@ -178,7 +269,7 @@ class I2C {
     *
     * @return true if the interface was initialise.
     */
-    virtual bool init();
+    virtual bool init() = 0;
 
     /** Write a bit stream to the I2C device
     *
@@ -190,7 +281,7 @@ class I2C {
     *             MSB order.
     * @param count the number of bits to write.
     */
-    virtual void writeBits(uint8_t address, uint32_t data, int count);
+    virtual void writeBits(uint8_t address, uint32_t data, int count) = 0;
 
     /** Read a bit stream from the I2C device
     *
@@ -203,7 +294,7 @@ class I2C {
     * @return a 32 bit value containing the bits read in the least significant
     *         bits.
     */
-    virtual uint32_t readBits(uint8_t address, int count);
+    virtual uint32_t readBits(uint8_t address, int count) = 0;
 
     /** Write a sequence of byte values to the i2c slave
     *
@@ -211,7 +302,7 @@ class I2C {
     * @param pData pointer to a buffer containing the data to send
     * @param count the number of bytes to transmit
     */
-    virtual void writeBytes(uint8_t address, const uint8_t *pData, int count);
+    virtual void writeBytes(uint8_t address, const uint8_t *pData, int count) = 0;
 
     /** Read a sequence of bytes from the i2c slave
     *
@@ -221,11 +312,11 @@ class I2C {
     *
     * @return the number of bytes read from the slave.
     */
-    virtual int readBytes(uint8_t address, uint8_t *pData, int count);
+    virtual int readBytes(uint8_t address, uint8_t *pData, int count) = 0;
   };
 
 // The primary I2C interface
-extern I2C i2c;
+extern I2C *i2c;
 
 //---------------------------------------------------------------------------
 // SPI Operations
@@ -381,7 +472,7 @@ class OutputStream {
      *
      * @return true if the write was successful
      */
-    virtual bool write(char ch);
+    virtual bool write(char ch) = 0;
 
     /** Write a sequence of bytes to the ouput stream
      *
@@ -410,6 +501,46 @@ class OutputStream {
      */
     int writeInt(uint32_t value);
   };
+
+/** Serial port interface
+ *
+ * The serial port extends the OutputStream to allow for reading data. A serial
+ * port is not a standard feature on SensNode boards and not exposed by the
+ * pin headers. Usually it is provided as a debugging feature only.
+ */
+class Serial : public OutputStream {
+  public:
+    /** Initialise the port with the specified baud rate.
+     *
+     * @param baud the baud rate to use.
+     *
+     * @return true if the port was configured correctly.
+     */
+    virtual bool init(int baud) = 0;
+
+    /** Determine if data is available to read
+     *
+     * @return true if data is available to read.
+     */
+    virtual bool available() = 0;
+
+    /** Read a single byte from the serial port
+     *
+     * @return the value of the byte read or -1 if no data is available.
+     */
+    virtual int read() = 0;
+
+    /** Write a single character to the stream
+     *
+     * @param ch the character to write.
+     *
+     * @return true if the write was successful
+     */
+    virtual bool write(char ch) = 0;
+  };
+
+// The default serial port (may be NULL if not present)
+extern Serial *serial;
 
 /** Print a formatted string
  *
@@ -527,6 +658,20 @@ uint32_t shiftIn(int data, int clock, int mode, int bits);
 uint32_t shiftInOut(int in, int out, int clock, int mode, uint32_t value, int bits);
 
 //---------------------------------------------------------------------------
+// Debugging support
+//---------------------------------------------------------------------------
+
+// The debug output stream (may be NULL if not present)
+extern OutputStream *debug;
+
+#ifdef DEBUG
+#  define DBG(msg, ...) \
+     if(debug) { debug->write("DEBUG: "); fprintf(debug, msg, ## __VA_ARGS__); debug->write("\n"); }
+#else
+#  define DBG(msg, ...)
+#endif
+
+//---------------------------------------------------------------------------
 // Application interface
 //---------------------------------------------------------------------------
 
@@ -546,7 +691,6 @@ void setup();
  * the amount of time spent in the function itself.
  */
 void loop();
-
 
 #endif /* __SENSNODE_H */
 

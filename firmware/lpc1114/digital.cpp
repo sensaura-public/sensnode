@@ -10,18 +10,18 @@
 /** Assign ports and pin numbers to all defined pins
  */
 static const PINDEF g_pins[] = {
-  { m_port: 1, m_pin: 9, m_func: 0x00, m_iocon: 0x38 }, // PIN_D0
-  { m_port: 1, m_pin: 8, m_func: 0x00, m_iocon: 0x14 }, // PIN_D1
-  { m_port: 1, m_pin: 0, m_func: 0x01, m_iocon: 0x78 }, // PIN_D2
-  { m_port: 0, m_pin: 7, m_func: 0x00, m_iocon: 0x50 }, // PIN_D3
-  { m_port: 0, m_pin: 2, m_func: 0x00, m_iocon: 0x1C }, // PIN_D4
-  { m_port: 0, m_pin: 3, m_func: 0x00, m_iocon: 0x2C }, // PIN_D5
-  { m_port: 0, m_pin: 4, m_func: 0x00, m_iocon: 0x30 }, // PIN_D6
-  { m_port: 0, m_pin: 5, m_func: 0x00, m_iocon: 0x34 }, // PIN_D7
-  { m_port: 0, m_pin: 8, m_func: 0x00, m_iocon: 0x60 }, // PIN_INDICATOR
-  { m_port: 0, m_pin: 9, m_func: 0x00, m_iocon: 0x64 }, // PIN_ACTIVITY
-  { m_port: 0, m_pin: 6, m_func: 0x00, m_iocon: 0x4C }, // PIN_LATCH
-  { m_port: 1, m_pin: 15, m_func: 0x00, m_iocon: 0x00 }, // PIN_POWER
+  { m_port: 1, m_pin: 9,  m_func: 0x00, m_iocon: 0x38 }, // PIN_D0
+  { m_port: 1, m_pin: 8,  m_func: 0x00, m_iocon: 0x14 }, // PIN_D1
+  { m_port: 1, m_pin: 0,  m_func: 0x01, m_iocon: 0x78 }, // PIN_D2
+  { m_port: 0, m_pin: 7,  m_func: 0x00, m_iocon: 0x50 }, // PIN_D3
+  { m_port: 0, m_pin: 2,  m_func: 0x00, m_iocon: 0x1C }, // PIN_D4
+  { m_port: 0, m_pin: 3,  m_func: 0x00, m_iocon: 0x2C }, // PIN_D5
+  { m_port: 0, m_pin: 4,  m_func: 0x00, m_iocon: 0x30 }, // PIN_D6
+  { m_port: 0, m_pin: 5,  m_func: 0x00, m_iocon: 0x34 }, // PIN_D7
+  { m_port: 0, m_pin: 8,  m_func: 0x00, m_iocon: 0x60 }, // PIN_INDICATOR
+  { m_port: 0, m_pin: 9,  m_func: 0x00, m_iocon: 0x64 }, // PIN_ACTIVITY
+  { m_port: 0, m_pin: 6,  m_func: 0x00, m_iocon: 0x4C }, // PIN_LATCH
+  { m_port: 0, m_pin: 10, m_func: 0x01, m_iocon: 0x04 }, // PIN_POWER
   };
 
 /** Determine if a pin is valid

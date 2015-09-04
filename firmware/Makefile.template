@@ -14,28 +14,34 @@ INCDIR = sensnode/include
 LIBDIR = sensnode/lib/$(TARGET)
 
 # What tools to use
-CC   = arm-none-eabi-gcc
-CXX  = arm-none-eabi-g++
-AS   = arm-none-eabi-as
-LD   = arm-none-eabi-ld
-SIZE = arm-none-eabi-size
+CROSS = arm-none-eabi
+CC    = $(CROSS)-gcc
+CXX   = $(CROSS)-g++
+AS    = $(CROSS)-as
+LD    = $(CROSS)-ld
+SIZE  = $(CROSS)-size
 
 # Basic configuration
 CPPFLAGS = -mcpu=cortex-m0 -mthumb -g -I$(INCDIR) -ffunction-sections -mlong-calls -fno-exceptions
 CXXFLAGS =  -fno-rtti
 LIBSPEC  = -L $(LIBDIR) -lsensnode
-LDFLAGS  = -nostartfiles --gc-sections
+LDFLAGS  = -nostartfiles -Wl,--gc-sections
 
 # Files we want
 OBJECTS = $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 OBJECTS += $(patsubst %.c,%.o,$(wildcard *.c))
 OBJECTS += $(patsubst %.S,%.o,$(wildcard *.S))
 
+# Set debug options
+ifneq (,$(DEBUG))
+    CPPFLAGS += -DDEBUG
+endif
+
 # Target specific definitions
-ifeq (,$(wildcard $(INCDIR)/boards/${TARGET}.mk))
+ifeq (,$(wildcard $(INCDIR)/boards/$(TARGET).mk))
     $(error No definitions for target $(TARGET))
 endif
-include $(INCDIR)/boards/${TARGET}.mk
+include $(INCDIR)/boards/$(TARGET).mk
 
 all: $(PROGRAM).hex
 
@@ -47,5 +53,5 @@ $(PROGRAM).hex: $(PROGRAM).elf
 	@$(SIZE) $(PROGRAM).elf
 
 $(PROGRAM).elf: $(OBJECTS)
-	$(LD) $(LDFLAGS) $(OBJECTS) $(LIBDIR)/init.o $(LIBSPEC) -T $(INCDIR)/boards/$(TARGET).ld --cref -Map $(PROGRAM).map -o $(PROGRAM).elf
+	$(CC) $(LDFLAGS) $(OBJECTS) $(LIBDIR)/init.o $(LIBSPEC) -T $(INCDIR)/boards/$(TARGET).ld -Wl,--cref -Wl,-Map,$(PROGRAM).map -o $(PROGRAM).elf
 
