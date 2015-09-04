@@ -642,13 +642,10 @@ uint32_t shiftInOut(int in, int out, int clock, int mode, uint32_t value, int bi
 extern OutputStream *debug;
 
 #ifdef DEBUG
-#  define DBG(msg) \
-     if(debug) { debug->write("DEBUG: "); debug->write(msg); debug->write("\n"); }
-#  define DBGX(msg, ...) \
-     if(debug) { debug->write("DEBUG: "); fprintf(debug, msg, __VA_ARGS__); debug->write("\n"); }
+#  define DBG(msg, ...) \
+     if(debug) { debug->write("DEBUG: "); fprintf(debug, msg, ## __VA_ARGS__); debug->write("\n"); }
 #else
-#  define DBG(msg)
-#  define DBGX(msg, ...)
+#  define DBG(msg, ...)
 #endif
 
 //---------------------------------------------------------------------------
