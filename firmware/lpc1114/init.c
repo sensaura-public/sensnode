@@ -94,6 +94,7 @@ static void initClock() {
   SYSPLLCTRL = (3 << 0) | (1 << 5); // set divisors/multipliers
   PDRUNCFG &= ~BIT7; // Power up the PLL.
   SYSPLLCLKUEN = 1; // inform PLL of update
+  // TODO: Wait for stabilisation?
   MAINCLKSEL = 3; // Use PLL as main clock
   MAINCLKUEN = 1; // Inform core of clock update
   // Set up the system tick timer. We don't use interrupts, we
@@ -101,6 +102,9 @@ static void initClock() {
   SYST_CSR = BIT0 | BIT2;
   SYST_RVR = TICKS_MAX;
   SYST_CVR = 0;
+  // Set up clock sources needed
+  SYSAHBCLKCTRL &= ~(BIT11);
+  SYSAHBCLKCTRL |= (BIT13 | BIT16); // ADC and IOCON
   }
 
 /** Main initialisation function
