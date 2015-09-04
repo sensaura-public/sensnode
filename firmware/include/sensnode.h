@@ -14,7 +14,7 @@
 #include <stdint.h>
 
 //---------------------------------------------------------------------------
-// Timing
+// Timing and power management
 //---------------------------------------------------------------------------
 
 /** Time units
@@ -66,6 +66,50 @@ uint32_t timeElapsed(uint32_t start, uint32_t end, TIMEUNIT units);
  *              point.
  */
 bool timeExpired(uint32_t reference, uint32_t duration, TIMEUNIT units);
+
+/** Set the battery shutdown limit
+ *
+ * Set the ADC reading at which the battery level will trigger a shutdown. The
+ * value at power up is 0 (which means never). The actual value will depend on
+ * the power source connected and the type of battery. This is intended to
+ * protect against draining LiION batteries to too low a level or to shutdown
+ * if an unreliable power supply will impact sensor readings.
+ *
+ * @param level the ADC reading to shutdown at.
+ */
+void setBatteryLimit(uint16_t level);
+
+/** Power down the device
+ *
+ * This function will completely power down the device. It is usually only
+ * called in situations where continuing to operate would be dangerous or
+ * possibly damage the sensor.
+ */
+void shutdown();
+
+/** Delay the invocation of the application loop for a specified duration
+ *
+ * This function will block until the specified time period has elapsed but
+ * background tasks (network operations, battery monitoring, etc) will continue.
+ *
+ * @param duration the amount of time to delay for
+ * @param units the units the duration is specified in
+ */
+void delay(uint32_t duration, TIMEUNIT units);
+
+/** Put the processor into sleep mode
+ *
+ * This function puts the CPU into sleep mode for the specified period of
+ * time to conserve power. While the processor is sleeping other background
+ * tasks (network operations, battery monitoring, etc) will also be paused.
+ *
+ * If the processor does not support sleep mode (or doesn't have an RTC to
+ * trigger waking) this function will behave like the 'delay()' function.
+ *
+ * @param duration the amount of time to delay for
+ * @param units the units the duration is specified in
+ */
+void sleep(uint32_t duration, TIMEUNIT units);
 
 //---------------------------------------------------------------------------
 // GPIO interface
