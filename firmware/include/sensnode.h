@@ -104,6 +104,15 @@ enum DIGITAL {
   PIN_INDICATOR, PIN_ACTIVITY, PIN_LATCH, PIN_POWER
   };
 
+/** PWM frequency
+ *
+ * The interface provides a single PWM output pin which may be configured
+ * for different frequencies. The actual frequencies are defined by the board.
+ */
+enum FREQUENCY {
+  SLOW = 0, NORMAL, FAST
+  };
+
 /** Initialise an analog pin
  *
  * This function configures an analog pin.
@@ -153,6 +162,20 @@ bool digitalRead(int pin);
  * @param value the new value of the pin - true for 'high', false for 'low'
  */
 void digitalWrite(int pin, bool value);
+
+/** Initialise the PWM pin
+ *
+ * @param freq the frequency to run the PWM output at
+ *
+ * @return true if PWM is available, false if not.
+ */
+bool pwmInit(FREQUENCY freq);
+
+/** Set the PWM duty cycle
+ *
+ * @param duty the duty cycle from 0 (always low) to 0xff (always on).
+ */
+void pwmDuty(uint8_t cycle);
 
 //---------------------------------------------------------------------------
 // I2C Operations
