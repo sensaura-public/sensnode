@@ -112,6 +112,29 @@ void delay(uint32_t duration, TIMEUNIT units);
  */
 void sleep(uint32_t duration, TIMEUNIT units);
 
+/** Set the output indication sequence
+ *
+ * Every power adapter has an indication LED which is used to provide visual
+ * feedback. This function sets an indication pattern to run on the LED. A
+ * pattern consists of a sequence of 16 LED states (1 = on, 0 = off) which
+ * are stepped through every 125ms giving a total of 2s for each pattern.
+ *
+ * If a pattern is already running it will be terminated at the current step
+ * and the new pattern started instead.
+ *
+ * @param pattern the 16 bit pattern to start.
+ * @param repeat if true the pattern will be repeated until a new pattern is
+ *               set.
+ */
+void indicate(uint16_t pattern, bool repeat);
+
+// Some standard patterns
+#define PATTERN_NONE   0b0000000000000000
+#define PATTERN_SLOW_2 0b1111000011110000
+#define PATTERN_FAST_2 0b1100110000000000
+#define PATTERN_FAST_3 0b1100110011000000
+#define PATTERN_FULL   0b1111111111111111
+
 //---------------------------------------------------------------------------
 // GPIO interface
 //---------------------------------------------------------------------------
