@@ -12,6 +12,7 @@
 
 // Bring in required definitions
 #include <stdint.h>
+#include <stdlib.h>
 
 //---------------------------------------------------------------------------
 // Timing and power management
@@ -448,7 +449,7 @@ class OutputStream {
      *
      * @return true if the write was successful
      */
-    virtual bool write(char ch);
+    virtual bool write(char ch) = 0;
 
     /** Write a sequence of bytes to the ouput stream
      *
@@ -477,6 +478,46 @@ class OutputStream {
      */
     int writeInt(uint32_t value);
   };
+
+/** Serial port interface
+ *
+ * The serial port extends the OutputStream to allow for reading data. A serial
+ * port is not a standard feature on SensNode boards and not exposed by the
+ * pin headers. Usually it is provided as a debugging feature only.
+ */
+class Serial : public OutputStream {
+  public:
+    /** Initialise the port with the specified baud rate.
+     *
+     * @param baud the baud rate to use.
+     *
+     * @return true if the port was configured correctly.
+     */
+    virtual bool init(int baud) = 0;
+
+    /** Determine if data is available to read
+     *
+     * @return true if data is available to read.
+     */
+    virtual bool available() = 0;
+
+    /** Read a single byte from the serial port
+     *
+     * @return the value of the byte read or -1 if no data is available.
+     */
+    virtual int read() = 0;
+
+    /** Write a single character to the stream
+     *
+     * @param ch the character to write.
+     *
+     * @return true if the write was successful
+     */
+    virtual bool write(char ch) = 0;
+  };
+
+// The default serial port (may be NULL if not present)
+extern Serial *serial;
 
 /** Print a formatted string
  *
@@ -594,6 +635,23 @@ uint32_t shiftIn(int data, int clock, int mode, int bits);
 uint32_t shiftInOut(int in, int out, int clock, int mode, uint32_t value, int bits);
 
 //---------------------------------------------------------------------------
+// Debugging support
+//---------------------------------------------------------------------------
+
+// The debug output stream (may be NULL if not present)
+extern OutputStream *debug;
+
+#ifdef DEBUG
+#  define DBG(msg) \
+     if(debug) { debug->write("DEBUG: "); debug->write(msg); debug->write("\n"); }
+#  define DBGX(msg, ...) \
+     if(debug) { debug->write("DEBUG: "); fprintf(debug, msg, __VA_ARGS__); debug->write("\n"); }
+#else
+#  define DBG(msg)
+#  define DBGX(msg, ...)
+#endif
+
+//---------------------------------------------------------------------------
 // Application interface
 //---------------------------------------------------------------------------
 
@@ -613,7 +671,6 @@ void setup();
  * the amount of time spent in the function itself.
  */
 void loop();
-
 
 #endif /* __SENSNODE_H */
 

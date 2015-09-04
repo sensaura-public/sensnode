@@ -32,6 +32,11 @@ OBJECTS = $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 OBJECTS += $(patsubst %.c,%.o,$(wildcard *.c))
 OBJECTS += $(patsubst %.S,%.o,$(wildcard *.S))
 
+# Set debug options
+ifneq (,$(DEBUG))
+    CPPFLAGS += -DDEBUG
+endif
+
 # Target specific definitions
 ifeq (,$(wildcard $(INCDIR)/boards/$(TARGET).mk))
     $(error No definitions for target $(TARGET))
