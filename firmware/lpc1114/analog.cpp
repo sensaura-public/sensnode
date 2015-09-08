@@ -96,6 +96,6 @@ class LPC_Analog : public Analog {
   };
 
 // Set up the reference
-static LPC_Analog lcpAnalog = LPC_Analog();
-Analog *analog = &LPC_Analog;
+static LPC_Analog lpcAnalog = LPC_Analog();
+Analog *analog = &lpcAnalog;
 
