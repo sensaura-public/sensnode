@@ -14,18 +14,20 @@
 
 /** Shift data out using clocked transfer
  *
+ * @param digital the digital interface to use
  * @param data the pin to use for the data transfer
  * @param clock the pin to use for the clock
  * @param mode the transfer mode (phase and polarity)
  * @param value the value to send
  * @param bits the number of bits to send
  */
-void shiftOut(int data, int clock, int mode, uint32_t value, int bits) {
+void shiftOut(Digital *digital, int data, int clock, int mode, uint32_t value, int bits) {
   // TODO: Implement this
   }
 
 /** Shift data in using a clocked transfer
  *
+ * @param digital the digital interface to use
  * @param data the pin to use for the data transfer
  * @param clock the pin to use for the clock
  * @param mode the transfer mode (phase and polarity)
@@ -33,13 +35,14 @@ void shiftOut(int data, int clock, int mode, uint32_t value, int bits) {
  *
  * @return the data value received
  */
-uint32_t shiftIn(int data, int clock, int mode, int bits) {
+uint32_t shiftIn(Digital *digital, int data, int clock, int mode, int bits) {
   // TODO: Implement this
   return 0;
   }
 
 /** Exchange data in using a clocked transfer
  *
+ * @param digital the digital interface to use
  * @param in the pin to use for input data
  * @param out the pin to use for output data
  * @param clock the pin to use for the clock
@@ -49,7 +52,7 @@ uint32_t shiftIn(int data, int clock, int mode, int bits) {
  *
  * @return the data value received
  */
-uint32_t shiftInOut(int in, int out, int clock, int mode, uint32_t value, int bits) {
+uint32_t shiftInOut(Digital *digital, int in, int out, int clock, int mode, uint32_t value, int bits) {
   // TODO: Implement this
   }
 
@@ -59,7 +62,8 @@ uint32_t shiftInOut(int in, int out, int clock, int mode, uint32_t value, int bi
 
 /** Constructor
  */
-SoftSPI::SoftSPI(int miso, int mosi, int sck) {
+SoftSPI::SoftSPI(Digital *digital, int miso, int mosi, int sck) {
+  m_digital = digital;
   m_miso = miso;
   m_mosi = mosi;
   m_sck = sck;
@@ -78,10 +82,10 @@ SoftSPI::SoftSPI(int miso, int mosi, int sck) {
  */
 bool SoftSPI::init(int mode) {
   // Configure the pins
-  digitalInit(m_miso, INPUT, false);
-  digitalInit(m_mosi, OUTPUT, false);
-  digitalInit(m_sck, OUTPUT, false);
-  digitalWrite(m_sck, mode & POLARITY_HIGH);
+  digital->init(m_miso, INPUT, false);
+  digital->init(m_mosi, OUTPUT, false);
+  digital->init(m_sck, OUTPUT, false);
+  digital->write(m_sck, mode & POLARITY_HIGH);
   // Save the mode
   m_mode = mode;
   }
@@ -95,7 +99,7 @@ bool SoftSPI::init(int mode) {
  */
 void SoftSPI::write(const uint8_t *pData, int count) {
   for(int index=0; index<count; index++)
-    shiftOut(m_mosi, m_sck, m_mode, (uint32_t)pData[index], 8);
+    shiftOut(m_digital, m_mosi, m_sck, m_mode, (uint32_t)pData[index], 8);
   }
 
 /** Read a sequence of bytes from the SPI interface
@@ -108,7 +112,7 @@ void SoftSPI::write(const uint8_t *pData, int count) {
  */
 void SoftSPI::read(uint8_t *pData, int count) {
   for(int index=0; index<count; index++)
-    pData[index] = (uint8_t)(shiftIn(m_miso, m_sck, m_mode, 8) & 0xFF);
+    pData[index] = (uint8_t)(shiftIn(m_digital, m_miso, m_sck, m_mode, 8) & 0xFF);
   }
 
 /** Read and write to the SPI interface
@@ -122,6 +126,6 @@ void SoftSPI::read(uint8_t *pData, int count) {
  */
 void SoftSPI::readWrite(const uint8_t *pOutput, uint8_t *pInput, int count) {
   for(int index=0; index<count; index++)
-    pInput[index] = (uint8_t)(shiftInOut(m_miso, m_mosi, m_sck, m_mode, pOutput[index], 8) & 0xFF);
+    pInput[index] = (uint8_t)(shiftInOut(m_digital, m_miso, m_mosi, m_sck, m_mode, pOutput[index], 8) & 0xFF);
   }
 
