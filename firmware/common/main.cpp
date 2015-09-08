@@ -38,7 +38,7 @@ static void resetIndicator() {
   g_patternIdx = 0;
   g_patternRepeat = false;
   g_patternTimer = getTicks();
-  digitalWrite(PIN_INDICATOR, false);
+  power->write(PIN_INDICATOR, false);
   }
 
 /** Update the indicator with the next bit in the sequence
@@ -60,7 +60,7 @@ static void taskIndicator() {
       }
     }
   // Set the current bit
-  digitalWrite(PIN_INDICATOR, g_pattern & (0x8000 >> g_patternIdx));
+  power->write(PIN_INDICATOR, g_pattern & (0x8000 >> g_patternIdx));
   g_patternIdx++;
   }
 
@@ -117,16 +117,16 @@ static void mainLoop(bool userTask) {
  */
 int main() {
   // First configure and latch our power pin.
-  digitalInit(PIN_LATCH, OUTPUT);
-  digitalWrite(PIN_LATCH, true);
+  power->init(PIN_LATCH, OUTPUT);
+  power->write(PIN_LATCH, true);
   // Call all the constructors
   for(void (**p)() = __init_array_start; p < __init_array_end; ++p)
     (*p)();
   // Set up the rest of the power head pins
-  digitalInit(PIN_INDICATOR, OUTPUT);
-  digitalWrite(PIN_INDICATOR, false);
-  digitalInit(PIN_ACTIVITY, INPUT);
-  digitalInit(PIN_POWER, INPUT);
+  power->init(PIN_INDICATOR, OUTPUT);
+  power->write(PIN_INDICATOR, false);
+  power->init(PIN_ACTIVITY, INPUT);
+  power->init(PIN_POWER, INPUT);
   analog->init(PIN_VBAT);
   // Show we are on (2s indicator LED)
   indicate(PATTERN_FULL, false);
@@ -184,7 +184,7 @@ void setBatteryLimit(uint16_t level) {
  * possibly damage the sensor.
  */
 void shutdown() {
-  digitalWrite(PIN_LATCH, false);
+  power->write(PIN_LATCH, false);
   while(true);
   }
 

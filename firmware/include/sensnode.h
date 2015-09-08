@@ -253,47 +253,48 @@ extern Analog *analog;
  * shift register or IO expander.
  */
 class Digital {
-  /** Initialise the digital pin interface
-   *
-   * Configure the interface prior to use. Note that the core implementations
-   * are initialised at start up and do not require explicit initialisation by
-   * the application.
-   *
-   * @return true if the initialise succeeded.
-   */
-  virtual bool init() = 0;
+  public:
+    /** Initialise the digital pin interface
+     *
+     * Configure the interface prior to use. Note that the core implementations
+     * are initialised at start up and do not require explicit initialisation by
+     * the application.
+     *
+     * @return true if the initialise succeeded.
+     */
+    virtual bool init() = 0;
 
-  /** Determine the number of pins available
-   *
-   * @return the number of pins supported by the interface.
-   */
-  virtual int pins() = 0;
+    /** Determine the number of pins available
+     *
+     * @return the number of pins supported by the interface.
+     */
+    virtual int pins() = 0;
 
-  /** Initialise a pin for digital input or output
-   *
-   * @param pin the digital pin to configure
-   * @param dir the direction of the pin (input or output)
-   * @param pullup enable or disable the pull up resistor on the pin
-   *
-   * @return true if the pin was configured as requested, false if the pin is
-   *         not available or could not be configured.
-   */
-  virtual bool init(int pin, IODIR dir, bool pullup = false) = 0;
+    /** Initialise a pin for digital input or output
+     *
+     * @param pin the digital pin to configure
+     * @param dir the direction of the pin (input or output)
+     * @param pullup enable or disable the pull up resistor on the pin
+     *
+     * @return true if the pin was configured as requested, false if the pin is
+     *         not available or could not be configured.
+     */
+    virtual bool init(int pin, IODIR dir, bool pullup = false) = 0;
 
-  /** Read the current value of the digital pin
-   *
-   * @param pin the digital pin to read
-   *
-   * @return true if the pin is currently 'high', false if 'low'
-   */
-  virtual bool read(int pin) = 0;
+    /** Read the current value of the digital pin
+     *
+     * @param pin the digital pin to read
+     *
+     * @return true if the pin is currently 'high', false if 'low'
+     */
+    virtual bool read(int pin) = 0;
 
-  /** Write a value to the digital pin
-   *
-   * @param pin the digital pin to write
-   * @param value the new value of the pin - true for 'high', false for 'low'
-   */
-  virtual void write(int pin, bool value) = 0;
+    /** Write a value to the digital pin
+     *
+     * @param pin the digital pin to write
+     * @param value the new value of the pin - true for 'high', false for 'low'
+     */
+    virtual void write(int pin, bool value) = 0;
   };
 
 // Core digital interfaces
@@ -708,16 +709,18 @@ uint16_t crcData(uint16_t crc, const uint8_t *pData, int length);
 
 /** Shift data out using clocked transfer
  *
+ * @param digital the digital interface to use
  * @param data the pin to use for the data transfer
  * @param clock the pin to use for the clock
  * @param mode the transfer mode (phase and polarity)
  * @param value the value to send
  * @param bits the number of bits to send
  */
-void shiftOut(int data, int clock, int mode, uint32_t value, int bits);
+void shiftOut(Digital *digital, int data, int clock, int mode, uint32_t value, int bits);
 
 /** Shift data in using a clocked transfer
  *
+ * @param digital the digital interface to use
  * @param data the pin to use for the data transfer
  * @param clock the pin to use for the clock
  * @param mode the transfer mode (phase and polarity)
@@ -725,10 +728,11 @@ void shiftOut(int data, int clock, int mode, uint32_t value, int bits);
  *
  * @return the data value received
  */
-uint32_t shiftIn(int data, int clock, int mode, int bits);
+uint32_t shiftIn(Digital *digital, int data, int clock, int mode, int bits);
 
 /** Exchange data in using a clocked transfer
  *
+ * @param digital the digital interface to use
  * @param in the pin to use for input data
  * @param out the pin to use for output data
  * @param clock the pin to use for the clock
@@ -738,7 +742,7 @@ uint32_t shiftIn(int data, int clock, int mode, int bits);
  *
  * @return the data value received
  */
-uint32_t shiftInOut(int in, int out, int clock, int mode, uint32_t value, int bits);
+uint32_t shiftInOut(Digital *digital, int in, int out, int clock, int mode, uint32_t value, int bits);
 
 //---------------------------------------------------------------------------
 // Debugging support
