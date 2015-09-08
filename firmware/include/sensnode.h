@@ -161,13 +161,20 @@ enum ANALOG {
 
 /** Digital pins
  *
- * Each board exposes 8 digital pins on the header. There are also 4 extra
- * pins used internally for the action button, indicator LED, power switch
- * and power latching.
+ * Each board exposes 8 digital pins on the header.
  */
 enum DIGITAL {
   PIN_D0 = 0, PIN_D1, PIN_D2, PIN_D3,
-  PIN_D4, PIN_D5, PIN_D6, PIN_D7,
+  PIN_D4, PIN_D5, PIN_D6, PIN_D7
+  };
+
+/** The power control header pins
+ *
+ * There are also 4 pins used internally for the action button, indicator LED,
+ * power switch and power latching. These are available to the user application
+ * but should not be modified.
+ */
+enum POWER {
   // These pins are used internally
   PIN_INDICATOR, PIN_ACTIVITY, PIN_LATCH, PIN_POWER
   };
@@ -181,69 +188,144 @@ enum FREQUENCY {
   SLOW = 0, NORMAL, FAST
   };
 
-/** Initialise an analog pin
+/** Class to represent analog pins
  *
- * This function configures an analog pin.
- *
- * @param pin the pin to configure
- *
- * @return true if the pin was configured as requested
+ * A SensNode board provides a core analog implementation that provides access
+ * to the two general purpose analog pins on the board and the battery level
+ * monitor. Drivers may implement this interface to provide access to extra
+ * analog pins through an I2C or SPI ADC chip for example.
  */
-bool analogInit(int pin);
+class Analog {
+  /** Initialise the analog interface
+   *
+   * This method should be called first to do any initialisation required for
+   * the interface. Note that the primary analog interface is initialised at
+   * startup, the application does not need to initialise it directly.
+   *
+   * @return true if the initialisation was successful.
+   */
+  virtual bool init() = 0;
 
-/** Read an analog value
- *
- * Reads a 16 bit value from the specified analog pin. If the physical ADC is
- * not capable of 16 bit resolution the results will be shifted so the
- * resolution available is represented in the most significant bits.
- *
- * @param pin the pin to read
- *
- * @return the resulting value scaled to a 16 bit resolution. If an error
- *         occurs or the pin has not been configured or is not available the
- *         value of 0 will be returned.
- */
-uint16_t analogRead(int pin);
+  /** Return the number of pins available on the interface.
+   *
+   * Pins are numbered from 0 upwards. The primary interface defines 3 analog
+   * inputs - two for general purpose use and the third for monitoring the
+   * battery level.
+   *
+   * @return the number of pins available.
+   */
+  virtual int pins() = 0;
 
-/** Initialise a pin for digital input or output
- *
- * @param pin the digital pin to configure
- * @param dir the direction of the pin (input or output)
- * @param pullup enable or disable the pull up resistor on the pin
- *
- * @return true if the pin was configured as requested, false if the pin is
- *         not available or could not be configured.
- */
-bool digitalInit(int pin, IODIR dir, bool pullup = false);
+  /** Initialise an analog pin
+   *
+   * This method configures an analog pin.
+   *
+   * @param pin the pin to configure
+   *
+   * @return true if the pin was configured as requested, false on error or
+   *              invalid pin number.
+   */
+  virtual bool init(int pin) = 0;
 
-/** Read the current value of the digital pin
- *
- * @param pin the digital pin to read
- *
- * @return true if the pin is currently 'high', false if 'low'
- */
-bool digitalRead(int pin);
+  /** Read an analog value
+   *
+   * Reads a 16 bit value from the specified analog pin. If the physical ADC is
+   * not capable of 16 bit resolution the results will be shifted so the
+   * resolution available is represented in the most significant bits.
+   *
+   * @param pin the pin to read
+   *
+   * @return the resulting value scaled to a 16 bit resolution. If an error
+   *         occurs or the pin has not been configured or is not available the
+   *         value of 0 will be returned.
+   */
+  virtual uint16_t read() = 0;
+  };
 
-/** Write a value to the digital pin
- *
- * @param pin the digital pin to write
- * @param value the new value of the pin - true for 'high', false for 'low'
- */
-void digitalWrite(int pin, bool value);
+// The primary analog interface
+extern Analog *analog;
 
-/** Initialise the PWM pin
+/** Class to manage digital pins
  *
- * @param freq the frequency to run the PWM output at
- *
- * @return true if PWM is available, false if not.
+ * The core library provides two digital pin interfaces, one for the general
+ * purpose digital IO and the other for the power control interface. Drivers
+ * may provide additional implementations to access digital pins through a
+ * shift register or IO expander.
  */
-bool pwmInit(FREQUENCY freq);
+class Digital {
+  /** Initialise the digital pin interface
+   *
+   * Configure the interface prior to use. Note that the core implementations
+   * are initialised at start up and do not require explicit initialisation by
+   * the application.
+   *
+   * @return true if the initialise succeeded.
+   */
+  virtual bool init() = 0;
 
-/** Set the PWM duty cycle
- *
- * @param duty the duty cycle from 0 (always low) to 0xff (always on).
+  /** Determine the number of pins available
+   *
+   * @return the number of pins supported by the interface.
+   */
+  virtual int pins() = 0;
+
+  /** Initialise a pin for digital input or output
+   *
+   * @param pin the digital pin to configure
+   * @param dir the direction of the pin (input or output)
+   * @param pullup enable or disable the pull up resistor on the pin
+   *
+   * @return true if the pin was configured as requested, false if the pin is
+   *         not available or could not be configured.
+   */
+  virtual bool init(int pin, IODIR dir, bool pullup = false) = 0;
+
+  /** Read the current value of the digital pin
+   *
+   * @param pin the digital pin to read
+   *
+   * @return true if the pin is currently 'high', false if 'low'
+   */
+  virtual bool read(int pin) = 0;
+
+  /** Write a value to the digital pin
+   *
+   * @param pin the digital pin to write
+   * @param value the new value of the pin - true for 'high', false for 'low'
+   */
+  virtual void write(int pin, bool value) = 0;
+  };
+
+// Core digital interfaces
+extern Digital *digital;
+extern Digital *power;
+
+/** Class to represent PWM output
  */
-void pwmDuty(uint8_t cycle);
+class PWM {
+  /** Initialise the PWM interface
+   *
+   * @param freq the frequency to run the PWM output at
+   *
+   * @return true if PWM is available, false if not.
+   */
+  virtual bool init(FREQUENCY freq) = 0;
+
+  /** Get the number of PWM pins available
+   *
+   * @return the number of PWM pins
+   */
+  virtual int pins() = 0;
+
+  /** Set the PWM duty cycle
+   *
+   * @param duty the duty cycle from 0 (always low) to 0xffff (always on).
+   */
+  virtual void write(int pin, uint16_t cycle) = 0;
+  };
+
+// The core PWM implementation
+extern PWM *pwm;
 
 //---------------------------------------------------------------------------
 // I2C Operations
@@ -401,10 +483,11 @@ extern SPI *spi;
  */
 class SoftSPI : public SPI {
   private:
-    int m_miso;
-    int m_mosi;
-    int m_sck;
-    int         m_mode;
+    int      m_miso;    // Pin index for MISO
+    int      m_mosi;    // Pin index for MOSI
+    int      m_sck;     // Pin index for SCK
+    int      m_mode;    // SPI mode
+    Digital *m_digital; // Digital interface to use
 
   public:
     /** Constructor
@@ -412,7 +495,7 @@ class SoftSPI : public SPI {
      * Assign the pins to use for communication. The constructor will configure
      * the pins during initialisation.
      */
-    SoftSPI(int miso, int mosi, int sck);
+    SoftSPI(Digital *digital, int miso, int mosi, int sck);
 
     /** Initialise the SPI interface with the specific mode
      *
