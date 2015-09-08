@@ -155,7 +155,6 @@ enum IODIR {
  */
 enum ANALOG {
   PIN_A0 = 0, PIN_A1,
-  PIN_A2, PIN_A3,
   PIN_VBAT // NOTE: VBAT is not exposed via headers
   };
 
@@ -196,50 +195,51 @@ enum FREQUENCY {
  * analog pins through an I2C or SPI ADC chip for example.
  */
 class Analog {
-  /** Initialise the analog interface
-   *
-   * This method should be called first to do any initialisation required for
-   * the interface. Note that the primary analog interface is initialised at
-   * startup, the application does not need to initialise it directly.
-   *
-   * @return true if the initialisation was successful.
-   */
-  virtual bool init() = 0;
+  public:
+    /** Initialise the analog interface
+     *
+     * This method should be called first to do any initialisation required for
+     * the interface. Note that the primary analog interface is initialised at
+     * startup, the application does not need to initialise it directly.
+     *
+     * @return true if the initialisation was successful.
+     */
+    virtual bool init() = 0;
 
-  /** Return the number of pins available on the interface.
-   *
-   * Pins are numbered from 0 upwards. The primary interface defines 3 analog
-   * inputs - two for general purpose use and the third for monitoring the
-   * battery level.
-   *
-   * @return the number of pins available.
-   */
-  virtual int pins() = 0;
+    /** Return the number of pins available on the interface.
+     *
+     * Pins are numbered from 0 upwards. The primary interface defines 3 analog
+     * inputs - two for general purpose use and the third for monitoring the
+     * battery level.
+     *
+     * @return the number of pins available.
+     */
+    virtual int pins() = 0;
 
-  /** Initialise an analog pin
-   *
-   * This method configures an analog pin.
-   *
-   * @param pin the pin to configure
-   *
-   * @return true if the pin was configured as requested, false on error or
-   *              invalid pin number.
-   */
-  virtual bool init(int pin) = 0;
+    /** Initialise an analog pin
+     *
+     * This method configures an analog pin.
+     *
+     * @param pin the pin to configure
+     *
+     * @return true if the pin was configured as requested, false on error or
+     *              invalid pin number.
+     */
+    virtual bool init(int pin) = 0;
 
-  /** Read an analog value
-   *
-   * Reads a 16 bit value from the specified analog pin. If the physical ADC is
-   * not capable of 16 bit resolution the results will be shifted so the
-   * resolution available is represented in the most significant bits.
-   *
-   * @param pin the pin to read
-   *
-   * @return the resulting value scaled to a 16 bit resolution. If an error
-   *         occurs or the pin has not been configured or is not available the
-   *         value of 0 will be returned.
-   */
-  virtual uint16_t read() = 0;
+    /** Read an analog value
+     *
+     * Reads a 16 bit value from the specified analog pin. If the physical ADC is
+     * not capable of 16 bit resolution the results will be shifted so the
+     * resolution available is represented in the most significant bits.
+     *
+     * @param pin the pin to read
+     *
+     * @return the resulting value scaled to a 16 bit resolution. If an error
+     *         occurs or the pin has not been configured or is not available the
+     *         value of 0 will be returned.
+     */
+    virtual uint16_t read(int pin) = 0;
   };
 
 // The primary analog interface

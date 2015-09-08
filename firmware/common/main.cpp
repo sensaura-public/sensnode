@@ -83,7 +83,7 @@ static void taskBattery() {
     return;
   timer = getTicks();
   // Check the battery level
-  if(analogRead(PIN_VBAT)>=g_battery) {
+  if(analog->read(PIN_VBAT)>=g_battery) {
     count = 0;
     return;
     }
@@ -127,7 +127,7 @@ int main() {
   digitalWrite(PIN_INDICATOR, false);
   digitalInit(PIN_ACTIVITY, INPUT);
   digitalInit(PIN_POWER, INPUT);
-  analogInit(PIN_VBAT);
+  analog->init(PIN_VBAT);
   // Show we are on (2s indicator LED)
   indicate(PATTERN_FULL, false);
   // TODO: Internal setup
