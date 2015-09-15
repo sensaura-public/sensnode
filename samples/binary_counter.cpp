@@ -1,6 +1,10 @@
 /*--------------------------------------------------------------------------*
 * Sample SensNode main program
 *---------------------------------------------------------------------------*
+* 08-Sep-2015 ShaneG
+*
+* Updated to the new interface model for GPIO pins.
+*
 * 03-Sep-2015 ShaneG
 *
 * This sample simply uses the 8 digital output bins as a binary counter
@@ -24,8 +28,8 @@ static uint8_t g_state = 0;
 void setup() {
   // Set all pins as output
   for(int pin=PIN_D0; pin<=PIN_D7; pin++) {
-    digitalInit(pin, OUTPUT);
-    digitalWrite(pin, false);
+    digital->init(pin, OUTPUT);
+    digital->write(pin, false);
     }
   g_timer = getTicks();
   }
@@ -44,7 +48,7 @@ void loop() {
     // Update pin output
     DBG("Updating pin output");
     for(int pin=PIN_D0; pin<=PIN_D7; pin++)
-      digitalWrite(pin, g_state & (1 << pin));
+      digital->write(pin, g_state & (1 << pin));
     }
   }
 
