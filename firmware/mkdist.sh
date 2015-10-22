@@ -14,7 +14,7 @@ DIR_LIBS=${BASEDIR}/lib
 DIR_INCL=${BASEDIR}/include
 
 # Supported targets
-TARGETS="lpc1114 xmc1100"
+TARGETS="xmc1100"
 
 # Clean the existing directory if needed
 if [ -d ${DIR_DIST} ]; then
