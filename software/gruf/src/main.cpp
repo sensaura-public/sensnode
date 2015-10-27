@@ -10,9 +10,14 @@
 #include <gruf.h>
 #include <optionparser.h>
 
+// Version information
+#define VER_MAJOR 0
+#define VER_MINOR 1
+
 /** Program entry point
  */
 int main(int argc, char *argv[]) {
+  ILog("Grand Unified Flasher V%d.%02d", VER_MAJOR, VER_MINOR);
   return 0;
   }
 

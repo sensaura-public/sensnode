@@ -16,6 +16,23 @@
 // Logging and error reporting
 //---------------------------------------------------------------------------
 
+/** The different verbosity levels for the application
+ */
+enum VERBOSITY {
+  QUIET = 0,
+  NORMAL,
+  VERBOSE
+  };
+
+/** Set the application verbosity
+ *
+ * The verbosity level starts as NORMAL but can be changed by the command line
+ * options.
+ *
+ * @param verbosity the required verbosity level
+ */
+void setVerbosity(VERBOSITY verbosity);
+
 /** Emit a debugging message
  *
  * Debug messages are only displayed in verbose mode.
@@ -216,7 +233,7 @@ class Firmware {
      * @return a pointer to the first block of memory to be written or NULL if
      *         there is no data.
      */
-    Block *first() = 0;
+    virtual Block *first() = 0;
 
     /** Get the start address of the flash data to be written
      *
@@ -225,14 +242,14 @@ class Firmware {
      * @return the start address of the firmware data or INVALID_ADDRESS if no
      *         data is available.
      */
-    uint32_t baseAddress() = 0;
+    virtual uint32_t baseAddress() = 0;
 
     /** Get the last address referenced in the firmware
      *
      * @return the highest address containing data to be written or INVALID_ADDRESS
      *         if no data is available.
      */
-    uint32_t lastAddress() = 0;
+    virtual uint32_t lastAddress() = 0;
 
     /** Get the total size of the firmware
      *
@@ -242,7 +259,7 @@ class Firmware {
      *
      * @return the total number of bytes covered by the firmware.
      */
-    uint32_t totalSize() = 0;
+    virtual uint32_t totalSize() = 0;
 
     /** Get the number of bytes that need to be written to the target flash.
      *
@@ -251,7 +268,7 @@ class Firmware {
      *
      * @return the number of bytes to write to the target.
      */
-    uint32_t flashSize() = 0;
+    virtual uint32_t flashSize() = 0;
 
     /** Patch the firmware with a new ID code
      *
@@ -267,7 +284,7 @@ class Firmware {
      * @return the address at which the ID was found or INVALID_ADDRESS if the
      *         location could not be determined.
      */
-    uint32_t patchID(ID id, const uint8_t *uuid);
+    virtual uint32_t patchID(ID id, const uint8_t *uuid);
   };
 
 /** Load firmware from a Intel Hex file.
@@ -300,7 +317,7 @@ Firmware *loadFirmware(const char *cszFilename);
  * @return the total number of bytes written or INVALID_ADDRESS if an error
  *         occurred.
  */
-uint32_t (*PFN_BOOTLOADER)(Flasher *pFlasher, Firmware *pFirmware, uint32_t id1, uint32_t id2);
+typedef uint32_t (*PFN_BOOTLOADER)(Flasher *pFlasher, Firmware *pFirmware, uint32_t id1, uint32_t id2);
 
 /** Information required to flash a device
  */

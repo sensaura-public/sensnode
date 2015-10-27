@@ -19,8 +19,8 @@
 /** Map device name to device information
  */
 struct DeviceInfoDetail {
-  const char *m_cszDeviceName; //! Name of the device
-  DeviceInfo  m_info;          //! Information about the device
+  const char *m_cszName; //! Name of the device
+  DeviceInfo  m_info;    //! Information about the device
   };
 
 /** The master device table
@@ -48,7 +48,7 @@ bool getDeviceInfo(const char *cszDevice, DeviceInfo *pDeviceInfo) {
   // Find the device
   for(int i=0; g_devices[i].m_cszName!=NULL; i++) {
     if(strnicmp(cszDevice, g_devices[i].m_cszName, MAX_DEVICE_NAME)==0) {
-      memcpy(pDeviceInfo, g_devices[i].m_info, sizeof(DeviceInfo));
+      memcpy(pDeviceInfo, &g_devices[i].m_info, sizeof(DeviceInfo));
       return true;
       }
     }
