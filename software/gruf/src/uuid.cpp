@@ -5,10 +5,14 @@
 *
 * Implements some platform independent UUID utility functions.
 *---------------------------------------------------------------------------*/
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <gruf.h>
+
+// Length of UUID strings (excluding terminating NUL)
+#define UUID_STRING_LENGTH 36
 
 /** Parse a UUID from a string representation
  *
@@ -39,7 +43,22 @@ bool uuidParse(uint8_t *uuid, const char *cszUUID) {
  *         of the UUID. Will return NULL on error.
  */
 const char *uuidPrint(uint8_t *uuid) {
-  return NULL;
+  static char uuidStr[UUID_STRING_LENGTH + 1];
+  int index = 0;
+  for(int i=0; i<UUID_LENGTH; i++) {
+    sprintf(&uuidStr[index], "%02x", uuid[i]);
+    index +=2 ;
+    switch(i) {
+      case 3:
+      case 5:
+      case 7:
+      case 9:
+        uuidStr[index++] = '-';
+        break;
+      }
+    }
+  uuidStr[index] = '\0';
+  return uuidStr;
   }
 
 
