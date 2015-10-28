@@ -303,45 +303,75 @@ Firmware *loadFirmware(const char *cszFilename);
 // Bootloader interface
 //---------------------------------------------------------------------------
 
-/** Bootloader function signature
- *
- * Each supported bootloader protocol provides an implementation of this
- * function which is responsible for writing the firmware data to the target
- * device flash.
- *
- * @param pFlasher the Flasher instance to use for communication
- * @param pFirmware the Firmware instance containing the firmware to transfer
- * @param id1 the first part of the expected device ID
- * @param id2 the second part of the expected device ID
- *
- * @return the total number of bytes written or INVALID_ADDRESS if an error
- *         occurred.
+/** Provides access to a bootloader protocol
  */
-typedef uint32_t (*PFN_BOOTLOADER)(Flasher *pFlasher, Firmware *pFirmware, uint32_t id1, uint32_t id2);
+class Bootloader {
+  public:
+    /** Attach the bootloader to the given flasher connection
+     *
+     * @param pFlasher the flasher to attach to.
+     */
+    virtual bool attach(Flasher *pFlasher) = 0;
 
-/** Information required to flash a device
- */
-struct DeviceInfo {
-  PFN_BOOTLOADER m_pfnBootloader; //!< The bootloader function to call
-  uint32_t       m_id1;           //!< First part of device ID code
-  uint32_t       m_id2;           //!< Second part of device ID code
-  uint32_t       m_base;          //!< The base address of the target flash
-  uint32_t       m_size;          //!< The total size of the target flash
+    /** Detach the bootloader from a flasher.
+     *
+     */
+    virtual void detach() = 0;
+
+    /** Validate the firmware data
+     *
+     * This method ensures the firmware is suitable for the target device. It
+     * checks the memory areas used and the total size.
+     *
+     * @return true if the firmware can be flashed, false if not.
+     */
+    virtual bool validate(Firmware *pFirmware) = 0;
+
+    /** Program the device with the given firmware data
+     *
+     * This method programs the target flash memory with the data represented
+     * by the firmware instance. The bootloader must be attached to a flasher
+     * for this to work.
+     *
+     * @return true if the firmware was written, false on failure.
+     */
+    virtual bool program(Firmware *pFirmware) = 0;
+
+    /** Verify the contents of the target flash memory
+     *
+     * This method compares the current contents of the targets flash memory
+     * with the data contained in the Firmware instance. The bootloader must
+     * be attached to a Flasher for this to work.
+     *
+     * @return true if the target flash contents match the firmware, false on
+     *              error.
+     */
+    virtual bool verify(Firmware *pFirmware) = 0;
+
+    /** Erase the contents of the target flash memory
+     *
+     * This method clears the entire flash memory on the target device. This
+     * generally results in the memory being filled with 0xFF bytes.
+     *
+     * The bootloader must be attached to a Flasher for this to work.
+     *
+     * @return true on success, false if an error occurred.
+     */
+    virtual bool erase() = 0;
+
   };
 
-/** Get the device information structure for the named device
+/** Get the bootloader implementation for the named device
  *
- * Populates a DeviceInfo structure with details about the named device. The
- * device name is specified on the command line and is matched to device
- * identification information and a bootloader protocol implementation.
+ * This function creates an returns an appropriate Bootloader implementation
+ * for the named device.
  *
- * @param cszDevice the name of the device to get info about
- * @param pDeviceInfo pointer to a DeviceInfo structure to fill
+ * @param cszDevice the device name.
  *
- * @return true if the device is known and the information provided, false if
- *              the device is not supported.
+ * @return a bootloader instance that can be used to program device or NULL
+ *         if the device is not recognised.
  */
-bool getDeviceInfo(const char *cszDevice, DeviceInfo *pDeviceInfo);
+Bootloader *getBootloader(const char *cszDevice);
 
 #endif
 
