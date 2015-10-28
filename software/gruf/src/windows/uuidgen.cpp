@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <Winsock2.h>
+#include <windows.h>
 #include <gruf.h>
 
 /** Create a new UUID
@@ -21,7 +23,16 @@
  * @return true if the UUID was created, false if not.
  */
 bool uuidCreate(uint8_t *uuid) {
-  // TODO: Pretend we did
+  GUID guid;
+  HRESULT result = CoCreateGuid(&guid);
+  if(result != S_OK)
+    return false;
+  // Windows GUID values are stored in native endian format, convert to
+  // network byte order first
+  guid.Data1 = htonl(guid.Data1);
+  guid.Data2 = htons(guid.Data2);
+  guid.Data3 = htons(guid.Data3);
+  memcpy(uuid, &guid, UUID_LENGTH);
   return true;
   }
 
