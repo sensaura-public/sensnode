@@ -284,7 +284,7 @@ class Firmware {
      * @return the address at which the ID was found or INVALID_ADDRESS if the
      *         location could not be determined.
      */
-    virtual uint32_t patchID(ID id, const uint8_t *uuid);
+    virtual uint32_t patchID(ID id, const uint8_t *uuid) = 0;
   };
 
 /** Load firmware from a Intel Hex file.

@@ -21,7 +21,7 @@ struct Arg: public option::Arg {
     }
   };
 
-enum  optionIndex { UNKNOWN, HELP, SILENT, NOISY, SETTYPE, SETNODE, DEVICE, PORT };
+enum  optionIndex { UNKNOWN, HELP, SILENT, NOISY, SETTYPE, SETNODE, DEVICE, PORT, ERASE };
 
 const option::Descriptor usage[] = {
   { UNKNOWN, 0, "" , ""    , option::Arg::None, "USAGE: gruf [options] hexfile\n\n"
@@ -32,7 +32,8 @@ const option::Descriptor usage[] = {
   { SETTYPE, 0, "", "typeid", Arg::Required, "  --typeid uuid  \tSet the type ID." },
   { SETNODE, 0, "", "nodeid", Arg::Required, "  --nodeid uuid  \tSet the node ID." },
   { DEVICE,  0, "d", "device", Arg::Required, "  --device, -d device  \tSpecify the target device." },
-  { PORT, 0, "p", "port", Arg::Required, "  --port, -p port  \tSpecify the serial port to use." },
+  { PORT,    0, "p", "port", Arg::Required, "  --port, -p port  \tSpecify the serial port to use." },
+  { ERASE,   0, "e", "erase", Arg::None, "  --erase, -e  \tErase the flash before programming." },
   {0,0,0,0,0,0}
   };
 
@@ -110,11 +111,68 @@ int main(int argc, char *argv[]) {
       return 1;
       }
     }
+  // Load the firmware data
   if(parse.nonOptionsCount()!=1) {
     ELog("You must specify a hex file on the command line.");
     return 1;
     }
-  // Validate existing options
+  Firmware *pFirmware = loadFirmware(parse.nonOption(0));
+  if(pFirmware==NULL) {
+    ELog("Unable to load firmware from '%s'.", parse.nonOption(0));
+    return 1;
+    }
+  // Patch with TYPEID and NODEID values
+  uint32_t addr = pFirmware->patchID(Firmware::NODEID, nodeID);
+  if(addr==INVALID_ADDRESS)
+    ILog("Unable to patch NODEID in firmware. Continuing anyway.");
+  else
+    ILog("Set NODEID to %s @ 0x%08x.", uuidPrint(nodeID), addr);
+  if(haveTypeID) {
+    addr = pFirmware->patchID(Firmware::TYPEID, typeID);
+    if(addr==INVALID_ADDRESS)
+      ILog("Unable to patch TYPEID in firmware. Continuing anyway.");
+    else
+      ILog("Set TYPEID to %s @ 0x%08x.", uuidPrint(typeID), addr);
+    }
+  // Make sure we can use the firmware
+  if(!pBootloader->validate(pFirmware)) {
+    ELog("The selected firmware cannot be loaded on this device.");
+    return 1;
+    }
+  // Make sure we have a port specified
+  if((options[PORT]==NULL)||(options[PORT].arg==NULL)||(options[PORT].arg[0]=='\0')) {
+    ELog("Port name must be specified.");
+    return 1;
+    }
+  Flasher *pFlasher = attachFlasher(options[PORT].arg);
+  if(pFlasher==NULL) {
+    ELog("Unable to connect to debug adapter on port '%s'.", options[PORT].arg);
+    return 1;
+    }
+  // Connect it all together
+  if(!pBootloader->attach(pFlasher)) {
+    ELog("Unable to enter programming mode.");
+    return 1;
+    }
+  if(options[ERASE]) {
+    ILog("Erasing target ...");
+    if(!pBootloader->erase()) {
+      ELog("Erase failed.");
+      return 1;
+      }
+    }
+  ILog("Writing firmware ...");
+  if(!pBootloader->program(pFirmware)) {
+    ELog("Write failed.");
+    return 1;
+    }
+  ILog("Verifying firmware ...");
+  if(!pBootloader->verify(pFirmware)) {
+    ELog("Verification failed.");
+    return 1;
+    }
+  // All done
+  pBootloader->detach();
   return 0;
   }
 
