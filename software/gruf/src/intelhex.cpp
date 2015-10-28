@@ -92,7 +92,7 @@ class FirmwareImpl : public Firmware {
      *         location could not be determined.
      */
     virtual uint32_t patchID(ID id, const uint8_t *uuid) {
-      return INVALID_ADDRESS;
+      return 0;
       }
   };
 
