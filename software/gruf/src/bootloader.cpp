@@ -37,13 +37,17 @@ struct DeviceInfo {
   uint32_t               m_id2;        //!< Second part of device ID code
   };
 
-//--- TODO: Bootloader implementation functions
+//--- Bootloader implementation functions
+extern Bootloader *BootloaderSTM32Factory(const char *cszDevice, uint32_t id1, uint32_t id2);
 
 /** The master device table
  */
 static DeviceInfo g_devices[] = {
-  // Name  FactoryFN  ID1 ID2
-  { NULL,  NULL,      0,  0    },
+  // Name         FactoryFN               ID1         ID2
+  { "stm32f030",  BootloaderSTM32Factory, 0x00000000, 0x00000000 },
+  { "stm32f070",  BootloaderSTM32Factory, 0x00000000, 0x00000000 },
+  // End of records
+  { NULL,         NULL,                    0,          0          },
   };
 
 /** Get the bootloader implementation for the named device
@@ -75,6 +79,16 @@ void listDevices() {
   ILog("Supported devices:");
   for(int i=0; g_devices[i].m_cszName!=NULL; i++)
     ILog("\t%s", g_devices[i].m_cszName);
+  }
+
+/** Constructor
+ *
+ * Stashes away the device specific information.
+ */
+AbstractBootloader::AbstractBootloader(const char *cszName, uint32_t id1, uint32_t id2) {
+  m_cszName = cszName;
+  m_id1 = id1;
+  m_id2 = id2;
   }
 
 /** Attach the bootloader to the given flasher connection
