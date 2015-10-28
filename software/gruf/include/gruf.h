@@ -373,5 +373,9 @@ class Bootloader {
  */
 Bootloader *getBootloader(const char *cszDevice);
 
+/** Display a list of all supported devices
+ */
+void listDevices();
+
 #endif
 
