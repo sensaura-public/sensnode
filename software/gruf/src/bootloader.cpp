@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <gruf.h>
+#include "bootloader.h"
 
 // Maximum length of a device name
 #define MAX_DEVICE_NAME 64
@@ -66,5 +67,46 @@ Bootloader *getBootloader(const char *cszDevice) {
     }
   // No such device
   return NULL;
+  }
+
+/** Display a list of all supported devices
+ */
+void listDevices() {
+  ILog("Supported devices:");
+  for(int i=0; g_devices[i].m_cszName!=NULL; i++)
+    ILog("\t%s", g_devices[i].m_cszName);
+  }
+
+/** Attach the bootloader to the given flasher connection
+ *
+ * @param pFlasher the flasher to attach to.
+ */
+bool AbstractBootloader::attach(Flasher *pFlasher) {
+  // Detach any existing flasher
+  detach();
+  // Check parameters
+  if(pFlasher==NULL)
+    return false;
+  // Store a reference to the flasher and enter programming mode
+  m_flasher = pFlasher;
+  m_flasher->program();
+  // All done
+  return true;
+  }
+
+/** Detach the bootloader from a flasher.
+ */
+void AbstractBootloader::detach() {
+  if(m_flasher==NULL)
+    return; // Nothing to do
+  // Reset the device on disconnect
+  m_flasher->reset();
+  m_flasher = NULL;
+  }
+
+/** Default destructor
+ */
+AbstractBootloader::~AbstractBootloader() {
+  detach();
   }
 

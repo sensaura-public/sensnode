@@ -44,5 +44,8 @@
     <ClInclude Include="include\optionparser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\bootloader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

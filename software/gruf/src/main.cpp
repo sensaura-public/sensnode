@@ -48,8 +48,11 @@ int main(int argc, char *argv[]) {
   option::Option* buffer  = new option::Option[stats.buffer_max];
   option::Parser parse(usage, argc, argv, options, buffer);
   // Check for errors and help requests
-  if(parse.error())
+  if(parse.error()) {
+    ELog("Unable to process command line options.");
+    option::printUsage(std::cout, usage);
     return 1;
+    }
   if(options[HELP] || argc == 0) {
     option::printUsage(std::cout, usage);
     return 0;
@@ -62,8 +65,53 @@ int main(int argc, char *argv[]) {
     }
   if(badOpts)
     return 1;
+  // Apply options for verbosity
+  if(options[SILENT])
+    setVerbosity(QUIET);
+  if(options[NOISY])
+    setVerbosity(VERBOSE);
+  // Check for device
+  if((options[DEVICE]==NULL)||(options[DEVICE].arg==NULL)||(options[DEVICE].arg[0]=='\0')) {
+    ELog("Device type must be specified.");
+    return 1;
+    }
+  if(strcmp(options[DEVICE].arg, "?")==0) {
+    // Show a list of device types and exit
+    setVerbosity(NORMAL); // In case 'quiet' mode was selected
+    listDevices();
+    return 0;
+    }
+  Bootloader *pBootloader = getBootloader(options[DEVICE].arg);
+  if(pBootloader==NULL) {
+    ELog("Unsupported device type - '%s'. Use --device ? to list supported types.", options[DEVICE].arg);
+    return 1;
+    }
+  // Get custom UUIDs if preset
+  bool haveTypeID = false;
+  uint8_t typeID[UUID_LENGTH];
+  uint8_t nodeID[UUID_LENGTH];
+  if(options[SETTYPE]&&options[SETTYPE].arg) {
+    if(!uuidParse(typeID, options[SETTYPE].arg)) {
+      ELog("Invalid UUID provided for type ID.");
+      return 1;
+      }
+    haveTypeID = true;
+    }
+  if(options[SETNODE]&&options[SETNODE].arg) {
+    if(!uuidParse(nodeID, options[SETNODE].arg)) {
+      ELog("Invalid UUID provided for node ID.");
+      return 1;
+      }
+    }
+  else {
+    // Generate a UUID for the node
+    if(!uuidCreate(nodeID)) {
+      ELog("Unable to generate a UUID for the node.");
+      return 1;
+      }
+    }
   if(parse.nonOptionsCount()!=1) {
-    ELog("One (and one only) hex file must be specified.");
+    ELog("You must specify a hex file on the command line.");
     return 1;
     }
   // Validate existing options
