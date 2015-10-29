@@ -83,6 +83,14 @@ void delay(uint32_t duration, TIMEUNIT units);
 // System management
 //---------------------------------------------------------------------------
 
+/** Indicate why the processor woke up
+ */
+typedef enum {
+  WAKE_UNKNOWN = 0, //!< Unknown wakeup reason
+  WAKE_TIMEOUT,     //!< Sleep period expired
+  WAKE_PINCHANGE,   //!< A wakeup pin changed state
+  } WAKE_REASON;
+
 /** Power down the device
  *
  * This function will completely power down the device. It is usually only
@@ -103,7 +111,7 @@ void shutdown();
  * @param duration the amount of time to delay for
  * @param units the units the duration is specified in
  */
-void sleep(uint32_t duration, TIMEUNIT units);
+WAKE_REASON sleep(uint32_t duration, TIMEUNIT units);
 
 /** Set the output indication sequence
  *

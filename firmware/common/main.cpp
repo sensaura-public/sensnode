@@ -193,19 +193,3 @@ void delay(uint32_t duration, TIMEUNIT units) {
   inDelay = false;
   }
 
-/** Put the processor into sleep mode
- *
- * This function puts the CPU into sleep mode for the specified period of
- * time to conserve power. While the processor is sleeping other background
- * tasks (network operations, battery monitoring, etc) will also be paused.
- *
- * If the processor does not support sleep mode (or doesn't have an RTC to
- * trigger waking) this function will behave like the 'delay()' function.
- *
- * @param duration the amount of time to delay for
- * @param units the units the duration is specified in
- */
-void sleep(uint32_t duration, TIMEUNIT units) {
-  delay(duration, units);
-  }
-
