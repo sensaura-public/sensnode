@@ -162,7 +162,8 @@ typedef enum {
 typedef enum {
   ANALOG,
   DIGITAL_INPUT,
-  DIGITAL_OUTPUT
+  DIGITAL_OUTPUT,
+  SPECIAL_FUNCTION,
   } PIN_MODE;
 
 /** Pin flags
