@@ -141,6 +141,11 @@ typedef enum {
   PIN_LATCH,      //!< Power latch output
   PIN_INDICATOR,  //!< Indicator LED output
   PIN_BATTERY,    //!< Battery voltage analog input
+  PIN_CE,         //!< Select pin for NRF24L01 module
+  PIN_CSN,        //!< Transmitter enable pin for NRF24L01 module
+  PIN_SCK,        //!< Pin for SPI clock
+  PIN_MISO,       //!< Pin for SPI input
+  PIN_MOSI,       //!< Pin for SPI output
   PINMAX
   } PIN;
 
@@ -206,6 +211,9 @@ void pinWrite(PIN pin, bool value);
  * @param pin the pin to sample the input from.
  * @param average the number of samples to average to get the final result.
  * @param skip the number of samples to skip before averaging.
+ *
+ * @return the sample read from the pin. This will be shifted left if needed
+ *         to fully occupy a 16 bit value.
  */
 uint16_t pinSample(PIN pin, int average = 1, int skip = 0);
 
