@@ -78,7 +78,7 @@ static int writeInt(FN_PUTC pfnPutC, void *pData, uint32_t value) {
 /** Do the actual formatting
  *
  * This function uses the current two characters of the input string to
- * determine what to send to the serial port.
+ * determine what to print.
  *
  * @param pStream pointer to the output stream
  * @param ch1 the current character of the format string
@@ -145,17 +145,6 @@ static bool sprintf_putc(char ch, SPRINTF_DATA *pData) {
   if(pData->m_index==pData->m_length)
     return false;
   pData->m_szOutput[pData->m_index++] = ch;
-  return true;
-  }
-
-/** Write a single character to the serial port
- *
- * @param ch the character to write.
- *
- * @return true if the write was successful
- */
-static bool serial_putc(char ch, void *pData) {
-  serialWrite(ch);
   return true;
   }
 
@@ -250,25 +239,4 @@ int sprintf(char *szBuffer, int length, const char *cszString, ...) {
     data.m_szOutput[data.m_index] = '\0';
   return result;
   }
-
-/** Print a formatted string to the serial port.
- *
- * This function utilises the @see vprintf function to transmit a formatted
- * string to the serial port.
- *
- * The function is blocking and will not return until all characters have been
- * transmitted.
- *
- * @param cszString the format string to use to generate the output.
- *
- * @return the number of bytes sent.
- */
-int serialPrintF(const char *cszString, ...) {
-  va_list args;
-  va_start(args, cszString);
-  int result = vprintf((FN_PUTC)&serial_putc, NULL, cszString, args);
-  va_end(args);
-  return result;
-  }
-
 
