@@ -13,6 +13,7 @@
 // Bring in required definitions
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 //---------------------------------------------------------------------------
 // Timing and delays
@@ -104,6 +105,25 @@ void shutdown();
  */
 void sleep(uint32_t duration, TIMEUNIT units);
 
+/** Set the output indication sequence
+ *
+ * Every power adapter has an indication LED which is used to provide visual
+ * feedback. This function sets an indication pattern to run on the LED. A
+ * pattern consists of a sequence of 16 LED states (1 = on, 0 = off) which
+ * are stepped through every 125ms giving a total of 2s for each pattern.
+ *
+ * If a pattern is already running it will be terminated at the current step
+ * and the new pattern started instead.
+ *
+ * @param pattern the 16 bit pattern to start.
+ * @param repeat if true the pattern will be repeated until a new pattern is
+ *               set.
+ */
+void indicate(uint16_t pattern, bool repeat);
+
+//--- Some standard patterns
+#define PATTERN_FULL 0xffff
+
 //---------------------------------------------------------------------------
 // GPIO interface
 //---------------------------------------------------------------------------
@@ -116,6 +136,11 @@ typedef enum {
   PIN2,
   PIN3,
   PIN4,
+  // Pins used internally
+  PIN_ACTION,     //!< Action button input
+  PIN_LATCH,      //!< Power latch output
+  PIN_INDICATOR,  //!< Indicator LED output
+  PIN_BATTERY,    //!< Battery voltage analog input
   PINMAX
   } PIN;
 
@@ -346,7 +371,7 @@ int serialPrint(const char *cszString, int length = -1);
 
 /** Print a formatted string to the serial port.
  *
- * This function utilises the @see xprintf function to transmit a formatted
+ * This function utilises the @see vprintf function to transmit a formatted
  * string to the serial port.
  *
  * The function is blocking and will not return until all characters have been
@@ -393,13 +418,15 @@ int serialRead();
 
 /** Function prototype for writing a single byte
  *
- * This function prototype is used by the @see xprintf function to output
+ * This function prototype is used by the @see vprintf function to output
  * formatted data.
  *
  * @param ch the character to write
  * @param pData pointer to a user data block.
+ *
+ * @return true if the data was written.
  */
-typedef void (*FN_PUTC)(char ch, void *pData);
+typedef bool (*FN_PUTC)(char ch, void *pData);
 
 /** Generate a formatted string
  *
@@ -428,10 +455,11 @@ typedef void (*FN_PUTC)(char ch, void *pData);
  * @param pData pointer to a user provided data block. This is passed to the
  *              character output function with each character.
  * @param cszFormat pointer to a nul terminated format string.
+ * @param args the variadic argument list.
  *
  * @return the number of characters generated.
  */
-int xprintf(FN_PUTC pfnPutC, void *pData, const char *cszFormat, ...);
+int vprintf(FN_PUTC pfnPutC, void *pData, const char *cszFormat, va_list args);
 
 /** Generate a formatted string
  *
