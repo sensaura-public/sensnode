@@ -9,8 +9,8 @@
 #include <platform.h>
 
 // Make sure TICKS_PER_SECOND is valid
-#if TICKS_PER_SECOND < 1000000L
-#  error TICKS_PER_SECOND must be >= 1000000
+#if TICKS_PER_SECOND < 1000L
+#  error TICKS_PER_SECOND must be >= 1000
 #endif
 
 /** Calculate the time difference between two tick counts.

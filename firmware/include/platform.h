@@ -17,14 +17,6 @@
 extern "C" {
 #endif
 
-/** System initialisation function
- */
-void systemInit();
-
-/** Default interrupt handler
- */
-void defaultInterruptHandler();
-
 /** Main program
  */
 int main();
