@@ -80,6 +80,89 @@ bool timeExpired(uint32_t reference, uint32_t duration, TIMEUNIT units);
 void delay(uint32_t duration, TIMEUNIT units);
 
 //---------------------------------------------------------------------------
+// Time of Day functions
+//
+// These functions are used to measure longer time periods related to the
+// current time of day. Each processor board features a real time clock which
+// is initialised to a common network time when the network link is
+// established. The accuracy of this time value depends on the network.
+//---------------------------------------------------------------------------
+
+/** Complete date time record.
+ */
+typedef struct _DATETIME {
+  uint16_t m_year;   // 4 digit year
+  uint8_t  m_month;  // Month of year (1 to 12)
+  uint8_t  m_day;    // Day of month (1 to 31)
+  uint8_t  m_hour;   // Hour of day (0 to 23)
+  uint8_t  m_minute; // Minute of hour (0 to 59)
+  uint8_t  m_second; // Second of minute (0 to 59)
+  } DATETIME;
+
+/** Get the current date and time according to the RTC
+ *
+ * @param pDateTime pointer to a structure to receive the date and time data.
+ *
+ * @return true on success, false on failure.
+ */
+bool getDateTime(DATETIME *pDateTime);
+
+/** Set the current date and time in the RTC
+ *
+ * @param pDateTime pointer to a structure containing the new date and time.
+ *
+ * @return true on success, false on failure.
+ */
+bool setDateTime(DATETIME *pDateTime);
+
+/** Set an alarm
+ *
+ * This function is used internally by the 'sleep()' function to set a wake
+ * up event for the processor. Calling it from application code will have
+ * no effect (the interrupt is essentially ignored).
+ *
+ * @param pDateTime pointer to a structure containing date and time for the alarm.
+ *
+ * @return true on success, false on failure.
+ */
+bool setAlarm(DATETIME *pDateTime);
+
+/** Determine if the date and time are valid
+ *
+ * Helper function to validate the values in a DATETIME structure.
+ *
+ * @param pDateTime pointer to a structure containing the new date and time.
+ *
+ * @return true if the values are valid, false otherwise.
+ */
+bool isDateTimeValid(DATETIME *pDateTime);
+
+/** Convert a date time structure to a timestamp
+ *
+ * A timestamp is an integer value representing the number of seconds since
+ * 1/1/1970. Using a timestamp makes conversion and comparison of DATETIME
+ * values easier.
+ *
+ * @param pDateTime pointer to a structure containing the date and time.
+ *
+ * @return the number of seconds since 1/1/1970 to the date and time specified
+ *         in the structure. If the structure represents a time prior to the
+ *         epoch or contains invalid information the return value will be 0.
+ */
+uint32_t toTimestamp(DATETIME *pDateTime);
+
+/** Convert a timestamp to a date time structure
+ *
+ * A timestamp is an integer value representing the number of seconds since
+ * 1/1/1970. Using a timestamp makes conversion and comparison of DATETIME
+ * values easier.
+ *
+ * @param pDateTime pointer to a structure to receive the date and time.
+ * @param timestamp the timestamp value to convert.
+ */
+void fromTimestamp(DATETIME *pDateTime, uint32_t timestamp);
+
+//---------------------------------------------------------------------------
 // System management
 //---------------------------------------------------------------------------
 
@@ -105,13 +188,16 @@ void shutdown();
  * time to conserve power. While the processor is sleeping other background
  * tasks (network operations, battery monitoring, etc) will also be paused.
  *
- * If the processor does not support sleep mode (or doesn't have an RTC to
- * trigger waking) this function will behave like the 'delay()' function.
+ * Note that the timeout is triggered by the RTC so has a maximum resolution
+ * of 1s.
  *
- * @param duration the amount of time to delay for
- * @param units the units the duration is specified in
+ * If the processor does not support sleep mode (or doesn't have an RTC to
+ * trigger waking) this function will behave like the 'delay()' function using
+ * SECONDS as the time unit.
+ *
+ * @param seconds the amount of time (in seconds) to sleep for
  */
-WAKE_REASON sleep(uint32_t duration, TIMEUNIT units);
+WAKE_REASON sleep(uint32_t seconds);
 
 /** Set the output indication sequence
  *
