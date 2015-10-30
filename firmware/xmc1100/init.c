@@ -160,7 +160,7 @@ void init() {
  * This is used for interrupts we don't expect to occur. Just goes into an
  * endless loop.
  */
-void default_handler() {
+void Default_Handler() {
   while(1);
   }
 
