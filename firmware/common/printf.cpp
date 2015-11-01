@@ -6,41 +6,79 @@
 * Implement the portable string formatting functions.
 *---------------------------------------------------------------------------*/
 #include <sensnode.h>
-#include <stdarg.h>
 
 //---------------------------------------------------------------------------
 // Helper functions
 //---------------------------------------------------------------------------
 
-static char *g_buffer;
-static int   g_length;
-static int   g_index;
-
-/** Extend OutputStream to write to a memory location
+/** Write a sequence of bytes to the ouput stream
+ *
+ * @param cszString pointer to the buffer containing the data to write
+ * @param length the number of bytes to write. If this is less than zero
+ *               the string is assumed to be NUL terminated.
+ *
+ * @return the number of bytes written. This may be less than requested.
  */
-class BufferOutputStream : public OutputStream {
-  public:
-    /** Write a single character to the stream
-     *
-     * @param ch the character to write.
-     *
-     * @return true if the write was successful
-     */
-    virtual bool write(char ch) {
-      if(g_index==g_length)
-        return false;
-      g_buffer[g_index++] = ch;
+static int write(FN_PUTC pfnPutC, void *pData, const char *cszString, int length) {
+  int index, count = 0;
+  if(length < 0) {
+    for(index=0; cszString[index]; index++) {
+      if((*pfnPutC)(cszString[index], pData))
+        count++;
       }
+    }
+  else {
+    for(index=0; index<length; index++) {
+      if((*pfnPutC)(cszString[index], pData))
+        count++;
+      }
+    }
+  return count;
+  }
 
-  };
+/** Write a numeric value in hex
+ *
+ * @param value the value to write
+ * @param digits the minimum number of digits to use.
+ *
+ * @return the number of characters written
+ */
+static int writeHex(FN_PUTC pfnPutC, void *pData, uint32_t value, int digits) {
+  // TODO: Implement this
+  return 0;
+  }
 
-// Share the single implementation
-static BufferOutputStream g_output = BufferOutputStream();
+/** Write a numeric value in decimal
+ *
+ * @param value the value to write
+ *
+ * @return the number of characters written
+ */
+static int writeInt(FN_PUTC pfnPutC, void *pData, uint32_t value) {
+  bool emit = false;
+  // Special case for 0
+  if(value==0) {
+    (*pfnPutC)('0', pData);
+    return 1;
+    }
+  // Emit the value, skip leading zeros
+  int written = 0;
+  for(uint16_t divisor = 10000; divisor > 0; divisor = divisor / 10) {
+    uint8_t digit = value / divisor;
+    value = value % divisor;
+    if((digit>0)||emit) {
+      if((*pfnPutC)('0' + digit, pData))
+        written++;
+      emit = true;
+      }
+    }
+  return written;
+  }
 
 /** Do the actual formatting
  *
  * This function uses the current two characters of the input string to
- * determine what to send to the serial port.
+ * determine what to print.
  *
  * @param pStream pointer to the output stream
  * @param ch1 the current character of the format string
@@ -50,53 +88,76 @@ static BufferOutputStream g_output = BufferOutputStream();
  * @return true if both characters should be skipped, false if we only need
  *              to move ahead by one.
  */
-static bool _printf(OutputStream *pStream, int& written, char ch1, char ch2, va_list *args) {
+static bool _printf(FN_PUTC pfnPutC, void *pData, int& written, char ch1, char ch2, va_list args) {
   bool skip = true;
   // Fail fast
   if(ch1=='%') {
     // Use the second character to determine what is requested
     if((ch2=='%')||(ch2=='\0')) {
-      if(pStream->write('%'))
+      if((*pfnPutC)('%', pData))
         written++;
       }
     else if(ch2=='c') {
-      if(pStream->write(va_arg(*args, int)))
+      if((*pfnPutC)(va_arg(args, int), pData))
         written++;
       }
     else {
       switch(ch2) {
         case 'u':
-          written += pStream->writeInt(va_arg(*args, unsigned int));
+          written += writeInt(pfnPutC, pData, va_arg(args, unsigned int));
           break;
         case 'x':
-          written += pStream->writeHex(va_arg(*args, unsigned int));
+          written += writeHex(pfnPutC, pData, va_arg(args, unsigned int), 8);
           break;
         case 's':
-          written += pStream->write(va_arg(*args, char *));
+          written += write(pfnPutC, pData, va_arg(args, char *), -1);
           break;
         default:
-          if(pStream->write(ch2))
+          if((*pfnPutC)(ch2, pData))
             written++;
           break;
         }
       }
     }
   else {
-    if(pStream->write(ch1))
+    if((*pfnPutC)(ch1, pData))
       written++;
     skip = false;
     }
   return skip;
   }
 
+/** Structure maintaining information about an output buffer
+ */
+struct SPRINTF_DATA {
+  char *m_szOutput; //! Buffer to contain the output
+  int   m_length;   //! Size of output buffer
+  int   m_index;    //! Index of next character to write
+  };
+
+/** Write a single character to a buffer
+ *
+ * @param ch the character to write.
+ *
+ * @return true if the write was successful
+ */
+static bool sprintf_putc(char ch, SPRINTF_DATA *pData) {
+  if(pData->m_index==pData->m_length)
+    return false;
+  pData->m_szOutput[pData->m_index++] = ch;
+  return true;
+  }
+
 //---------------------------------------------------------------------------
 // Public API
 //---------------------------------------------------------------------------
 
-
-/** Print a formatted string
+/** Generate a formatted string
  *
- * This function supports a subset of the 'printf' string formatting syntax.
+ * This function is used to generate strings from a format. This implementation
+ * uses a user provided function pointer to output the data as it is generated.
+ *
+ * The function supports a subset of the 'printf' string formatting syntax.
  * Allowable insertion types are:
  *
  *  %% - Display a % character. There should be no entry in the variable
@@ -114,26 +175,27 @@ static bool _printf(OutputStream *pStream, int& written, char ch1, char ch2, va_
  *  %s - Display a NUL terminated string from RAM. The matching argument must
  *       be a pointer to a RAM location.
  *
- * @param pStream pointer to the output stream to write to
- * @param cszString pointer to a nul terminated format string.
+ * @param pfnPutC pointer the character output function
+ * @param pData pointer to a user provided data block. This is passed to the
+ *              character output function with each character.
+ * @param cszFormat pointer to a nul terminated format string.
+ * @param args the variadic argument list.
  *
- * @return the number of character actually printed.
+ * @return the number of characters generated.
  */
-int fprintf(OutputStream *pStream, const char *cszString, ...) {
-  va_list args;
-  va_start(args, cszString);
+int vprintf(FN_PUTC pfnPutC, void *pData, const char *cszString, va_list args) {
   char ch1, ch2 = *cszString;
   int written = 0;
   for(int index=1; ch2!='\0'; index++) {
     ch1 = ch2;
     ch2 = cszString[index];
-    if(_printf(pStream, written, ch1, ch2, &args)) {
+    if(_printf(pfnPutC, pData, written, ch1, ch2, args)) {
       // Move ahead an extra character so we wind up jumping by two
       ch1 = ch2;
       ch2 = cszString[++index];
       }
     }
-  va_end(args);
+  return written;
   }
 
 /** Print a formatted string
@@ -162,10 +224,19 @@ int fprintf(OutputStream *pStream, const char *cszString, ...) {
  *         string will not be NUL terminated.
  */
 int sprintf(char *szBuffer, int length, const char *cszString, ...) {
-  g_buffer = szBuffer;
-  g_length = length;
-  g_index = 0;
-  // TODO: Implement this
-  return 0;
+  va_list args;
+  va_start(args, cszString);
+  if(length<=0)
+    return length;
+  SPRINTF_DATA data;
+  data.m_szOutput = szBuffer;
+  data.m_length = length;
+  data.m_index = 0;
+  int result = vprintf((FN_PUTC)&sprintf_putc, &data, cszString, args);
+  va_end(args);
+  // Add a terminating NUL if there is room
+  if(data.m_index!=data.m_length)
+    data.m_szOutput[data.m_index] = '\0';
+  return result;
   }
 

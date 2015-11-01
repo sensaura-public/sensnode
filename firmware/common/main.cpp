@@ -38,7 +38,7 @@ static void resetIndicator() {
   g_patternIdx = 0;
   g_patternRepeat = false;
   g_patternTimer = getTicks();
-  power->write(PIN_INDICATOR, false);
+  pinWrite(PIN_INDICATOR, false);
   }
 
 /** Update the indicator with the next bit in the sequence
@@ -60,7 +60,7 @@ static void taskIndicator() {
       }
     }
   // Set the current bit
-  power->write(PIN_INDICATOR, g_pattern & (0x8000 >> g_patternIdx));
+  pinWrite(PIN_INDICATOR, g_pattern & (0x8000 >> g_patternIdx));
   g_patternIdx++;
   }
 
@@ -83,7 +83,7 @@ static void taskBattery() {
     return;
   timer = getTicks();
   // Check the battery level
-  if(analog->read(PIN_VBAT)>=g_battery) {
+  if(pinSample(PIN_BATTERY, 1, 3)>=g_battery) {
     count = 0;
     return;
     }
@@ -117,17 +117,16 @@ static void mainLoop(bool userTask) {
  */
 int main() {
   // First configure and latch our power pin.
-  power->init(PIN_LATCH, OUTPUT);
-  power->write(PIN_LATCH, true);
+  pinConfig(PIN_LATCH, DIGITAL_OUTPUT);
+  pinWrite(PIN_LATCH, true);
   // Call all the constructors
   for(void (**p)() = __init_array_start; p < __init_array_end; ++p)
     (*p)();
   // Set up the rest of the power head pins
-  power->init(PIN_INDICATOR, OUTPUT);
-  power->write(PIN_INDICATOR, false);
-  power->init(PIN_ACTIVITY, INPUT);
-  power->init(PIN_POWER, INPUT);
-  analog->init(PIN_VBAT);
+  pinConfig(PIN_INDICATOR, DIGITAL_OUTPUT);
+  pinWrite(PIN_INDICATOR, false);
+  pinConfig(PIN_ACTION, DIGITAL_INPUT, WAKEUP);
+  pinConfig(PIN_BATTERY, ANALOG);
   // Show we are on (2s indicator LED)
   indicate(PATTERN_FULL, false);
   // TODO: Internal setup
@@ -163,20 +162,6 @@ void indicate(uint16_t pattern, bool repeat) {
   g_patternRepeat = repeat;
   }
 
-/** Set the battery shutdown limit
- *
- * Set the ADC reading at which the battery level will trigger a shutdown. The
- * value at power up is 0 (which means never). The actual value will depend on
- * the power source connected and the type of battery. This is intended to
- * protect against draining LiION batteries to too low a level or to shutdown
- * if an unreliable power supply will impact sensor readings.
- *
- * @param level the ADC reading to shutdown at.
- */
-void setBatteryLimit(uint16_t level) {
-  g_battery = level;
-  }
-
 /** Power down the device
  *
  * This function will completely power down the device. It is usually only
@@ -184,7 +169,7 @@ void setBatteryLimit(uint16_t level) {
  * possibly damage the sensor.
  */
 void shutdown() {
-  power->write(PIN_LATCH, false);
+  pinWrite(PIN_LATCH, false);
   while(true);
   }
 
@@ -206,21 +191,5 @@ void delay(uint32_t duration, TIMEUNIT units) {
   while(!timeExpired(timer, duration, units))
     mainLoop(false);
   inDelay = false;
-  }
-
-/** Put the processor into sleep mode
- *
- * This function puts the CPU into sleep mode for the specified period of
- * time to conserve power. While the processor is sleeping other background
- * tasks (network operations, battery monitoring, etc) will also be paused.
- *
- * If the processor does not support sleep mode (or doesn't have an RTC to
- * trigger waking) this function will behave like the 'delay()' function.
- *
- * @param duration the amount of time to delay for
- * @param units the units the duration is specified in
- */
-void sleep(uint32_t duration, TIMEUNIT units) {
-  delay(duration, units);
   }
 

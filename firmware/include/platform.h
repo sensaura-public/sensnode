@@ -17,14 +17,6 @@
 extern "C" {
 #endif
 
-/** System initialisation function
- */
-void systemInit();
-
-/** Default interrupt handler
- */
-void defaultInterruptHandler();
-
 /** Main program
  */
 int main();
@@ -77,13 +69,11 @@ int main();
 #define disable_interrupts() asm(" cpsid i ")
 
 // Bring in target specific hardware definitions
-#ifdef TARGET_LPC1114
-#  include <boards/lpc1114.h>
-#elif TARGET_STM32F030
+#if defined(TARGET_STM32F030)
 #  include <boards/stm32f030.h>
-#elif TARGET_STM32F070
+#elif defined(TARGET_STM32F070)
 #  include <boards/stm32f070.h>
-#elif TARGET_XMC1100
+#elif defined(TARGET_XMC1100)
 #  include <boards/xmc1100.h>
 #else
 #  error "Unsupported or undefined target platform"

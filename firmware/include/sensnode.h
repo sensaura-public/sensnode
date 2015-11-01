@@ -13,9 +13,10 @@
 // Bring in required definitions
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 //---------------------------------------------------------------------------
-// Timing and power management
+// Timing and delays
 //---------------------------------------------------------------------------
 
 /** Time units
@@ -42,7 +43,7 @@ uint32_t getTicks();
 /** Calculate the time difference between two tick counts.
  *
  * This function will convert the difference between two tick count values into
- * an actualy time period. Tick count wrap around is accounted for. The return
+ * an actual time period. Tick count wrap around is accounted for. The return
  * value is the number of whole units rounded down.
  *
  * @param start the tick count at the start of the period
@@ -68,26 +69,6 @@ uint32_t timeElapsed(uint32_t start, uint32_t end, TIMEUNIT units);
  */
 bool timeExpired(uint32_t reference, uint32_t duration, TIMEUNIT units);
 
-/** Set the battery shutdown limit
- *
- * Set the ADC reading at which the battery level will trigger a shutdown. The
- * value at power up is 0 (which means never). The actual value will depend on
- * the power source connected and the type of battery. This is intended to
- * protect against draining LiION batteries to too low a level or to shutdown
- * if an unreliable power supply will impact sensor readings.
- *
- * @param level the ADC reading to shutdown at.
- */
-void setBatteryLimit(uint16_t level);
-
-/** Power down the device
- *
- * This function will completely power down the device. It is usually only
- * called in situations where continuing to operate would be dangerous or
- * possibly damage the sensor.
- */
-void shutdown();
-
 /** Delay the invocation of the application loop for a specified duration
  *
  * This function will block until the specified time period has elapsed but
@@ -98,19 +79,125 @@ void shutdown();
  */
 void delay(uint32_t duration, TIMEUNIT units);
 
+//---------------------------------------------------------------------------
+// Time of Day functions
+//
+// These functions are used to measure longer time periods related to the
+// current time of day. Each processor board features a real time clock which
+// is initialised to a common network time when the network link is
+// established. The accuracy of this time value depends on the network.
+//---------------------------------------------------------------------------
+
+/** Complete date time record.
+ */
+typedef struct _DATETIME {
+  uint16_t m_year;   // 4 digit year
+  uint8_t  m_month;  // Month of year (1 to 12)
+  uint8_t  m_day;    // Day of month (1 to 31)
+  uint8_t  m_hour;   // Hour of day (0 to 23)
+  uint8_t  m_minute; // Minute of hour (0 to 59)
+  uint8_t  m_second; // Second of minute (0 to 59)
+  } DATETIME;
+
+/** Get the current date and time according to the RTC
+ *
+ * @param pDateTime pointer to a structure to receive the date and time data.
+ *
+ * @return true on success, false on failure.
+ */
+bool getDateTime(DATETIME *pDateTime);
+
+/** Set the current date and time in the RTC
+ *
+ * @param pDateTime pointer to a structure containing the new date and time.
+ *
+ * @return true on success, false on failure.
+ */
+bool setDateTime(DATETIME *pDateTime);
+
+/** Set an alarm
+ *
+ * This function is used internally by the 'sleep()' function to set a wake
+ * up event for the processor. Calling it from application code will have
+ * no effect (the interrupt is essentially ignored).
+ *
+ * @param pDateTime pointer to a structure containing date and time for the alarm.
+ *
+ * @return true on success, false on failure.
+ */
+bool setAlarm(DATETIME *pDateTime);
+
+/** Determine if the date and time are valid
+ *
+ * Helper function to validate the values in a DATETIME structure.
+ *
+ * @param pDateTime pointer to a structure containing the new date and time.
+ *
+ * @return true if the values are valid, false otherwise.
+ */
+bool isDateTimeValid(DATETIME *pDateTime);
+
+/** Convert a date time structure to a timestamp
+ *
+ * A timestamp is an integer value representing the number of seconds since
+ * 1/1/1970. Using a timestamp makes conversion and comparison of DATETIME
+ * values easier.
+ *
+ * @param pDateTime pointer to a structure containing the date and time.
+ *
+ * @return the number of seconds since 1/1/1970 to the date and time specified
+ *         in the structure. If the structure represents a time prior to the
+ *         epoch or contains invalid information the return value will be 0.
+ */
+uint32_t toTimestamp(DATETIME *pDateTime);
+
+/** Convert a timestamp to a date time structure
+ *
+ * A timestamp is an integer value representing the number of seconds since
+ * 1/1/1970. Using a timestamp makes conversion and comparison of DATETIME
+ * values easier.
+ *
+ * @param pDateTime pointer to a structure to receive the date and time.
+ * @param timestamp the timestamp value to convert.
+ */
+void fromTimestamp(DATETIME *pDateTime, uint32_t timestamp);
+
+//---------------------------------------------------------------------------
+// System management
+//---------------------------------------------------------------------------
+
+/** Indicate why the processor woke up
+ */
+typedef enum {
+  WAKE_UNKNOWN = 0, //!< Unknown wakeup reason
+  WAKE_TIMEOUT,     //!< Sleep period expired
+  WAKE_PINCHANGE,   //!< A wakeup pin changed state
+  } WAKE_REASON;
+
+/** Power down the device
+ *
+ * This function will completely power down the device. It is usually only
+ * called in situations where continuing to operate would be dangerous or
+ * possibly damage the sensor.
+ */
+void shutdown();
+
 /** Put the processor into sleep mode
  *
  * This function puts the CPU into sleep mode for the specified period of
  * time to conserve power. While the processor is sleeping other background
  * tasks (network operations, battery monitoring, etc) will also be paused.
  *
- * If the processor does not support sleep mode (or doesn't have an RTC to
- * trigger waking) this function will behave like the 'delay()' function.
+ * Note that the timeout is triggered by the RTC so has a maximum resolution
+ * of 1s.
  *
- * @param duration the amount of time to delay for
- * @param units the units the duration is specified in
+ * If the processor does not support sleep mode (or doesn't have an RTC to
+ * trigger waking) this function will behave like the 'delay()' function using
+ * SECONDS as the time unit.
+ *
+ * @param seconds the amount of time (in seconds) to sleep for
  */
-void sleep(uint32_t duration, TIMEUNIT units);
+WAKE_REASON sleep(uint32_t seconds);
 
 /** Set the output indication sequence
  *
@@ -128,507 +215,328 @@ void sleep(uint32_t duration, TIMEUNIT units);
  */
 void indicate(uint16_t pattern, bool repeat);
 
-// Some standard patterns
-#define PATTERN_NONE   0b0000000000000000
-#define PATTERN_SLOW_2 0b1111000011110000
-#define PATTERN_FAST_2 0b1100110000000000
-#define PATTERN_FAST_3 0b1100110011000000
-#define PATTERN_FULL   0b1111111111111111
+//--- Some standard patterns
+#define PATTERN_FULL 0xffff
 
 //---------------------------------------------------------------------------
 // GPIO interface
 //---------------------------------------------------------------------------
 
-/** IO direction
- *
- * Direction of IO for digital pins.
+/** GPIO pins available on the board
  */
-enum IODIR {
-  INPUT,
-  OUTPUT
-  };
+typedef enum {
+  PIN0 = 0,
+  PIN1,
+  PIN2,
+  PIN3,
+  PIN4,
+  // Pins used internally
+  PIN_ACTION,     //!< Action button input
+  PIN_LATCH,      //!< Power latch output
+  PIN_INDICATOR,  //!< Indicator LED output
+  PIN_BATTERY,    //!< Battery voltage analog input
+  PIN_CE,         //!< Select pin for NRF24L01 module
+  PIN_CSN,        //!< Transmitter enable pin for NRF24L01 module
+  PIN_SCK,        //!< Pin for SPI clock
+  PIN_MISO,       //!< Pin for SPI input
+  PIN_MOSI,       //!< Pin for SPI output
+  PINMAX
+  } PIN;
 
-/** Analog pins
- *
- * Each board exposes up to 4 analog pins on the header. Additionally there is
- * the VBAT analog channel for reading the current battery status.
+/** Pin function modes
  */
-enum ANALOG {
-  PIN_A0 = 0, PIN_A1,
-  PIN_VBAT // NOTE: VBAT is not exposed via headers
-  };
+typedef enum {
+  ANALOG,
+  DIGITAL_INPUT,
+  DIGITAL_OUTPUT,
+  SPECIAL_FUNCTION,
+  } PIN_MODE;
 
-/** Digital pins
- *
- * Each board exposes 8 digital pins on the header.
+/** Pin flags
  */
-enum DIGITAL {
-  PIN_D0 = 0, PIN_D1, PIN_D2, PIN_D3,
-  PIN_D4, PIN_D5, PIN_D6, PIN_D7
-  };
+typedef enum {
+  PULLUP   = 0x01, // Enable internal pullup (DIGITAL_INPUT only)
+  PULLDOWN = 0x02, // Enable internal pulldown (DIGITAL_INPUT only)
+  WAKEUP   = 0x04, // Enable wake from sleep (DIGITAL_INPUT only)
+  } PIN_FLAG;
 
-/** The power control header pins
+/** Configure a GPIO pin
  *
- * There are also 4 pins used internally for the action button, indicator LED,
- * power switch and power latching. These are available to the user application
- * but should not be modified.
- */
-enum POWER {
-  // These pins are used internally
-  PIN_INDICATOR, PIN_ACTIVITY, PIN_LATCH, PIN_POWER
-  };
-
-/** PWM frequency
+ * @param pin the pin to configure
+ * @param mode the requested mode for the pin
+ * @param flags optional flags for the pin.
  *
- * The interface provides a single PWM output pin which may be configured
- * for different frequencies. The actual frequencies are defined by the board.
+ * @return true if the pin was configured as requested.
  */
-enum FREQUENCY {
-  SLOW = 0, NORMAL, FAST
-  };
+bool pinConfig(PIN pin, PIN_MODE mode, uint8_t flags = 0);
 
-/** Class to represent analog pins
+/** Read the value of a digital pin.
  *
- * A SensNode board provides a core analog implementation that provides access
- * to the two general purpose analog pins on the board and the battery level
- * monitor. Drivers may implement this interface to provide access to extra
- * analog pins through an I2C or SPI ADC chip for example.
- */
-class Analog {
-  public:
-    /** Initialise the analog interface
-     *
-     * This method should be called first to do any initialisation required for
-     * the interface. Note that the primary analog interface is initialised at
-     * startup, the application does not need to initialise it directly.
-     *
-     * @return true if the initialisation was successful.
-     */
-    virtual bool init() = 0;
-
-    /** Return the number of pins available on the interface.
-     *
-     * Pins are numbered from 0 upwards. The primary interface defines 3 analog
-     * inputs - two for general purpose use and the third for monitoring the
-     * battery level.
-     *
-     * @return the number of pins available.
-     */
-    virtual int pins() = 0;
-
-    /** Initialise an analog pin
-     *
-     * This method configures an analog pin.
-     *
-     * @param pin the pin to configure
-     *
-     * @return true if the pin was configured as requested, false on error or
-     *              invalid pin number.
-     */
-    virtual bool init(int pin) = 0;
-
-    /** Read an analog value
-     *
-     * Reads a 16 bit value from the specified analog pin. If the physical ADC is
-     * not capable of 16 bit resolution the results will be shifted so the
-     * resolution available is represented in the most significant bits.
-     *
-     * @param pin the pin to read
-     *
-     * @return the resulting value scaled to a 16 bit resolution. If an error
-     *         occurs or the pin has not been configured or is not available the
-     *         value of 0 will be returned.
-     */
-    virtual uint16_t read(int pin) = 0;
-  };
-
-// The primary analog interface
-extern Analog *analog;
-
-/** Class to manage digital pins
+ * To use this function the pin must be configured as DIGITAL_INPUT. If the pin
+ * was configured for a different mode the result will always be false.
  *
- * The core library provides two digital pin interfaces, one for the general
- * purpose digital IO and the other for the power control interface. Drivers
- * may provide additional implementations to access digital pins through a
- * shift register or IO expander.
- */
-class Digital {
-  public:
-    /** Initialise the digital pin interface
-     *
-     * Configure the interface prior to use. Note that the core implementations
-     * are initialised at start up and do not require explicit initialisation by
-     * the application.
-     *
-     * @return true if the initialise succeeded.
-     */
-    virtual bool init() = 0;
-
-    /** Determine the number of pins available
-     *
-     * @return the number of pins supported by the interface.
-     */
-    virtual int pins() = 0;
-
-    /** Initialise a pin for digital input or output
-     *
-     * @param pin the digital pin to configure
-     * @param dir the direction of the pin (input or output)
-     * @param pullup enable or disable the pull up resistor on the pin
-     *
-     * @return true if the pin was configured as requested, false if the pin is
-     *         not available or could not be configured.
-     */
-    virtual bool init(int pin, IODIR dir, bool pullup = false) = 0;
-
-    /** Read the current value of the digital pin
-     *
-     * @param pin the digital pin to read
-     *
-     * @return true if the pin is currently 'high', false if 'low'
-     */
-    virtual bool read(int pin) = 0;
-
-    /** Write a value to the digital pin
-     *
-     * @param pin the digital pin to write
-     * @param value the new value of the pin - true for 'high', false for 'low'
-     */
-    virtual void write(int pin, bool value) = 0;
-  };
-
-// Core digital interfaces
-extern Digital *digital;
-extern Digital *power;
-
-/** Class to represent PWM output
- */
-class PWM {
-  /** Initialise the PWM interface
-   *
-   * @param freq the frequency to run the PWM output at
-   *
-   * @return true if PWM is available, false if not.
-   */
-  virtual bool init(FREQUENCY freq) = 0;
-
-  /** Get the number of PWM pins available
-   *
-   * @return the number of PWM pins
-   */
-  virtual int pins() = 0;
-
-  /** Set the PWM duty cycle
-   *
-   * @param duty the duty cycle from 0 (always low) to 0xffff (always on).
-   */
-  virtual void write(int pin, uint16_t cycle) = 0;
-  };
-
-// The core PWM implementation
-extern PWM *pwm;
-
-//---------------------------------------------------------------------------
-// I2C Operations
-//
-// Each board provides a primary I2C interface on D7/D6 (SDA/SCL) which is
-// accessed through the 'i2c' global instance. When I2C is used those pins
-// may no longer be used as general digital IO.
-//---------------------------------------------------------------------------
-
-/** I2C interface
+ * @param pin the pin to read
  *
- * An implementation that uses the hardware interface on the process is
- * provided in the global variable 'i2c'. Additional interfaces may also be
- * exposed including 'bit banging' implementations.
- *
- * Drivers that use the I2C interface should take a reference to this class
- * rather than use the global instance to allow them to be attached to
- * alternative implementations.
+ * @return the current state of the pin.
  */
-class I2C {
-  public:
-    /** Initialise the I2C interface
-    *
-    * @return true if the interface was initialise.
-    */
-    virtual bool init() = 0;
+bool pinRead(PIN pin);
 
-    /** Write a bit stream to the I2C device
-    *
-    * This function is used to send a sequence of bits to the i2c slave device
-    * identified by the address.
-    *
-    * @param address the address of the slave device
-    * @param data the data to send, the lowest 'count' bits will be sent in
-    *             MSB order.
-    * @param count the number of bits to write.
-    */
-    virtual void writeBits(uint8_t address, uint32_t data, int count) = 0;
+/** Change the state of a digital pin.
+ *
+ * To use this function the pin must be configured as DIGITAL_OUTPUT. If the
+ * pin was configured for a different mode the function will have no effect.
+ *
+ * @param pin the pin to change the state of
+ * @param value the value to set the pin to (true = high, false = low)
+ */
+void pinWrite(PIN pin, bool value);
 
-    /** Read a bit stream from the I2C device
-    *
-    * This function is used to read a sequence of bits from the i2c slave
-    * identified by the address.
-    *
-    * @param address the address of the slave device
-    * @param count the number of bits to read
-    *
-    * @return a 32 bit value containing the bits read in the least significant
-    *         bits.
-    */
-    virtual uint32_t readBits(uint8_t address, int count) = 0;
-
-    /** Write a sequence of byte values to the i2c slave
-    *
-    * @param address the address of the slave device
-    * @param pData pointer to a buffer containing the data to send
-    * @param count the number of bytes to transmit
-    */
-    virtual void writeBytes(uint8_t address, const uint8_t *pData, int count) = 0;
-
-    /** Read a sequence of bytes from the i2c slave
-    *
-    * @param address the address of the slave device
-    * @param pData a pointer to a buffer to receive the data read
-    * @param count the maximum number of bytes to read
-    *
-    * @return the number of bytes read from the slave.
-    */
-    virtual int readBytes(uint8_t address, uint8_t *pData, int count) = 0;
-  };
-
-// The primary I2C interface
-extern I2C *i2c;
+/** Sample the value of a analog input
+ *
+ * To use this function the pin must be configured as ANALOG. If the pin was
+ * configured for a different mode the function will always return 0.
+ *
+ * The value returned by this function is always scaled to a full 16 bit value
+ * regardless of the resolution of the underlying ADC.
+ *
+ * The function allows the caller to sample and discard a number of samples
+ * before reading and to take a group of samples and return the average. This
+ * can improve the accuracy of the final result.
+ *
+ * @param pin the pin to sample the input from.
+ * @param average the number of samples to average to get the final result.
+ * @param skip the number of samples to skip before averaging.
+ *
+ * @return the sample read from the pin. This will be shifted left if needed
+ *         to fully occupy a 16 bit value.
+ */
+uint16_t pinSample(PIN pin, int average = 1, int skip = 0);
 
 //---------------------------------------------------------------------------
 // SPI Operations
 //
-// Each board provides a primary SPI interface on D5, D4 & D3 (MISO, MOSI & SCK)
-// which is accessed through the 'spi' global instance. When SPI is used those
-// pins may no longer be used as general digital IO.
+// Each board provides a dedicated SPI interface that is also used internally
+// to control the NRF24L01 transceiver. These pins are dedicated to SPI and
+// cannot be repurposed. It is essential that user code ensures that all SPI
+// devices are deselected prior to exiting the 'loop()' function or before
+// any call to 'sleep()' or 'delay()'.
 //---------------------------------------------------------------------------
 
-// Bit masks for SPI transfer modes
-#define MSB_FIRST     0x04
-#define LSB_FIRST     0x00
-#define POLARITY_HIGH 0x02
-#define POLARITY_LOW  0x00
-#define PHASE_HIGH    0x01
-#define PHASE_LOW     0x00
-
-/** SPI interface
+/** Configure the SPI interface
  *
- * An implementation that uses the hardware interface on the processor is
- * provided in the global variable 'spi'. Additional interfaces may also be
- * exposed including 'bit banging' implementations.
+ * This function sets the operating mode for the SPI interface for future
+ * data transfer calls.
  *
- * Drivers that use the SPI interface should take a reference to this class
- * rather than use the global instance to allow them to be attached to
- * alternative implementations.
+ * @param polarity the polarity of the SPI clock - true = HIGH, false = LOW
+ * @param phase the phase of the SPI clock - true = HIGH, false = LOW
+ * @param msbFirst true if data should be sent MSB first, false if LSB first.
  */
-class SPI {
-  public:
-    /** Initialise the SPI interface with the specific mode
-     *
-     * This method may be called multiple times to change the operating mode.
-     * The mode values supported are:
-     *
-     * Mode CPOL CPHA
-     *  0    0    0
-     *  1    0    1
-     *  2    1    0
-     *  3    1    1
-     */
-    virtual bool init(int mode = 0) = 0;
+void spiConfig(bool polarity, bool phase, bool msbFirst);
 
-    /** Write a sequence of bytes to the SPI interface
-     *
-     * This method assumes the target device has been selected by the caller.
-     *
-     * @param pData the buffer containing the data to write
-     * @param count the number of bytes to write
-     */
-    virtual void write(const uint8_t *pData, int count) = 0;
-
-    /** Read a sequence of bytes from the SPI interface
-     *
-     * This method assumes the target device has been selected by the caller.
-     * During the read the call will keep MOSI at 0.
-     *
-     * @param pData pointer to a buffer to receive the data
-     * @param count the number of bytes to read.
-     */
-    virtual void read(uint8_t *pData, int count) = 0;
-
-    /** Read and write to the SPI interface
-     *
-     * This method assumes the target device has been selected by the caller.
-     *
-     * @param pOutput a buffer containing the bytes to write to the SPI port
-     * @param pInput a buffer to receive the bytes read from the SPI port
-     * @param count the number of bytes to transfer. Both buffers must be at
-     *        least this size.
-     */
-    virtual void readWrite(const uint8_t *pOutput, uint8_t *pInput, int count) = 0;
-  };
-
-// The primary SPI interface for the board (using D5 = MISO, D6 = MOSI, D7 = CLK)
-extern SPI *spi;
-
-/** Software SPI implementation
+/** Write a sequence of bytes to the SPI interface
  *
- * This class provides a bit-banged implementation of the SPI interface on
- * arbitrary digital pins. It can be used with any driver that expects an
- * SPI interface.
+ * This function assumes the target device has been selected by the caller.
+ *
+ * @param pData the buffer containing the data to write
+ * @param count the number of bytes to write
  */
-class SoftSPI : public SPI {
-  private:
-    int      m_miso;    // Pin index for MISO
-    int      m_mosi;    // Pin index for MOSI
-    int      m_sck;     // Pin index for SCK
-    int      m_mode;    // SPI mode
-    Digital *m_digital; // Digital interface to use
+void spiWrite(const uint8_t *pData, int count);
 
-  public:
-    /** Constructor
-     *
-     * Assign the pins to use for communication. The constructor will configure
-     * the pins during initialisation.
-     */
-    SoftSPI(Digital *digital, int miso, int mosi, int sck);
+/** Read a sequence of bytes from the SPI interface
+ *
+ * This function assumes the target device has been selected by the caller.
+ * During the read the call will keep MOSI at 0.
+ *
+ * @param pData pointer to a buffer to receive the data
+ * @param count the number of bytes to read.
+ */
+void spiRead(uint8_t *pData, int count);
 
-    /** Initialise the SPI interface with the specific mode
-     *
-     * This method may be called multiple times to change the operating mode.
-     * The mode values supported are:
-     *
-     * Mode CPOL CPHA
-     *  0    0    0
-     *  1    0    1
-     *  2    1    0
-     *  3    1    1
-     */
-    virtual bool init(int mode = 0);
-
-    /** Write a sequence of bytes to the SPI interface
-     *
-     * This method assumes the target device has been selected by the caller.
-     *
-     * @param pData the buffer containing the data to write
-     * @param count the number of bytes to write
-     */
-    virtual void write(const uint8_t *pData, int count);
-
-    /** Read a sequence of bytes from the SPI interface
-     *
-     * This method assumes the target device has been selected by the caller.
-     * During the read the call will keep MOSI at 0.
-     *
-     * @param pData pointer to a buffer to receive the data
-     * @param count the number of bytes to read.
-     */
-    virtual void read(uint8_t *pData, int count);
-
-    /** Read and write to the SPI interface
-     *
-     * This method assumes the target device has been selected by the caller.
-     *
-     * @param pOutput a buffer containing the bytes to write to the SPI port
-     * @param pInput a buffer to receive the bytes read from the SPI port
-     * @param count the number of bytes to transfer. Both buffers must be at
-     *        least this size.
-     */
-    virtual void readWrite(const uint8_t *pOutput, uint8_t *pInput, int count);
-  };
+/** Read and write to the SPI interface
+ *
+ * This function assumes the target device has been selected by the caller.
+ *
+ * @param pOutput a buffer containing the bytes to write to the SPI port
+ * @param pInput a buffer to receive the bytes read from the SPI port
+ * @param count the number of bytes to transfer. Both buffers must be at
+ *        least this size.
+ */
+void spiTransfer(const uint8_t *pOutput, uint8_t *pInput, int count);
 
 //---------------------------------------------------------------------------
-// Helper functions and classes
+// I2C Operations
+//
+// Each board allows for an I2C interface using pins PIN0 and PIN1. When I2C
+// is being used these pins are no longer available for general use.
 //---------------------------------------------------------------------------
 
-/** A simple stream interface to write data
- */
-class OutputStream {
-  public:
-    /** Write a single character to the stream
-     *
-     * @param ch the character to write.
-     *
-     * @return true if the write was successful
-     */
-    virtual bool write(char ch) = 0;
-
-    /** Write a sequence of bytes to the ouput stream
-     *
-     * @param cszString pointer to the buffer containing the data to write
-     * @param length the number of bytes to write. If this is less than zero
-     *               the string is assumed to be NUL terminated.
-     *
-     * @return the number of bytes written. This may be less than requested.
-     */
-    int write(const char *cszString, int length = -1);
-
-    /** Write a numeric value in hex
-     *
-     * @param value the value to write
-     * @param digits the minimum number of digits to use.
-     *
-     * @return the number of characters written
-     */
-    int writeHex(uint32_t value, int digits = 0);
-
-    /** Write a numeric value in decimal
-     *
-     * @param value the value to write
-     *
-     * @return the number of characters written
-     */
-    int writeInt(uint32_t value);
-  };
-
-/** Serial port interface
+/** Initialise the I2C interface
  *
- * The serial port extends the OutputStream to allow for reading data. A serial
- * port is not a standard feature on SensNode boards and not exposed by the
- * pin headers. Usually it is provided as a debugging feature only.
+ * This function sets up the I2C interface on PIN0/PIN1 and disables the use
+ * of those pins for general purpose IO. Future calls to pinConfig() for
+ * either pin will fail.
  */
-class Serial : public OutputStream {
-  public:
-    /** Initialise the port with the specified baud rate.
-     *
-     * @param baud the baud rate to use.
-     *
-     * @return true if the port was configured correctly.
-     */
-    virtual bool init(int baud) = 0;
+void i2cConfig();
 
-    /** Determine if data is available to read
-     *
-     * @return true if data is available to read.
-     */
-    virtual bool available() = 0;
-
-    /** Read a single byte from the serial port
-     *
-     * @return the value of the byte read or -1 if no data is available.
-     */
-    virtual int read() = 0;
-
-    /** Write a single character to the stream
-     *
-     * @param ch the character to write.
-     *
-     * @return true if the write was successful
-     */
-    virtual bool write(char ch) = 0;
-  };
-
-// The default serial port (may be NULL if not present)
-extern Serial *serial;
-
-/** Print a formatted string
+/** Write a bit stream to the I2C device
  *
- * This function supports a subset of the 'printf' string formatting syntax.
+ * This function is used to send a sequence of bits to the i2c slave device
+ * identified by the address.
+ *
+ * @param address the address of the slave device
+ * @param data the data to send, the lowest 'count' bits will be sent in
+ *             MSB order.
+ * @param count the number of bits to write.
+ */
+void i2cWriteBits(uint8_t address, uint32_t data, int count);
+
+/** Read a bit stream from the I2C device
+ *
+ * This function is used to read a sequence of bits from the i2c slave
+ * identified by the address.
+ *
+ * @param address the address of the slave device
+ * @param count the number of bits to read
+ *
+ * @return a 32 bit value containing the bits read in the least significant
+ *         bits.
+ */
+uint32_t i2cReadBits(uint8_t address, int count);
+
+/** Write a sequence of byte values to the i2c slave
+ *
+ * @param address the address of the slave device
+ * @param pData pointer to a buffer containing the data to send
+ * @param count the number of bytes to transmit
+ */
+void i2cWriteBytes(uint8_t address, const uint8_t *pData, int count);
+
+/** Read a sequence of bytes from the i2c slave
+ *
+ * @param address the address of the slave device
+ * @param pData a pointer to a buffer to receive the data read
+ * @param count the maximum number of bytes to read
+ *
+ * @return the number of bytes read from the slave.
+ */
+int i2cReadBytes(uint8_t address, uint8_t *pData, int count);
+
+//---------------------------------------------------------------------------
+// Serial port operations
+//
+// Each SensNode supports a single UART that is connected to the debug port.
+// Although the intention is to use the port purely for debugging purposes
+// it is also available for communication with serial peripherals.
+//---------------------------------------------------------------------------
+
+/** Supported baud rates
+ */
+typedef enum {
+  B9600,
+  B19200,
+  B38400,
+  B57600,
+  B115200
+  } BAUDRATE;
+
+/** Initialise the serial port
+ *
+ * The serial port is always operated in 8 bit mode with a single stop bit
+ * (8N1). The core initialisation will set the initial baudrate to 57600 but
+ * user code may reconfigure the port to a different baud rate if required.
+ *
+ * @param rate the requested baud rate
+ */
+void serialInit(BAUDRATE rate);
+
+/** Write a single character to the serial port
+ *
+ * @param ch the character to write
+ */
+void serialWrite(uint8_t ch);
+
+/** Print a sequence of characters to the serial port.
+ *
+ * This function may be used to print a NUL terminated string (if the length
+ * parameter < 0) or a fixed sequence of bytes (if length >= 0).
+ *
+ * The function is blocking and will not return until all characters have been
+ * transmitted.
+ *
+ * @param cszString pointer to a buffer containing the data to be transmitted.
+ * @param length the number of bytes to send. If length < 0 the buffer is treated
+ *               as a NUL terminated string and sending will terminate with the
+ *               first 0 byte.
+ *
+ * @return the number of bytes sent.
+ */
+int serialPrint(const char *cszString, int length = -1);
+
+/** Print a formatted string to the serial port.
+ *
+ * This function utilises the @see vprintf function to transmit a formatted
+ * string to the serial port.
+ *
+ * The function is blocking and will not return until all characters have been
+ * transmitted.
+ *
+ * @param cszString the format string to use to generate the output.
+ *
+ * @return the number of bytes sent.
+ */
+int serialPrintF(const char *cszString, ...);
+
+/** Get the number of bytes available in the input buffer.
+ *
+ * This function determines how much data is available to read from the serial
+ * port.
+ *
+ * @return the number of bytes available to read immediately.
+ */
+int serialAvailable();
+
+/** Read a single byte from the serial port
+ *
+ * This function is non-blocking, if no data is available to read the function
+ * will return a value < 0.
+ *
+ * @return the value of the byte read or a value < 0 if no data is available.
+ */
+int serialRead();
+
+// Simple macro to output debug information on the serial port.
+#ifdef DEBUG
+#  define DBG(msg, ...) \
+     serialPrintF("DEBUG: "), serialPrintF(msg, ## __VA_ARGS__), serialWrite('\n')
+#else
+#  define DBG(msg, ...)
+#endif
+
+//---------------------------------------------------------------------------
+// Helper and utility functions
+//
+// This is a set of common functions that are useful for sensor based
+// applications.
+//---------------------------------------------------------------------------
+
+/** Function prototype for writing a single byte
+ *
+ * This function prototype is used by the @see vprintf function to output
+ * formatted data.
+ *
+ * @param ch the character to write
+ * @param pData pointer to a user data block.
+ *
+ * @return true if the data was written.
+ */
+typedef bool (*FN_PUTC)(char ch, void *pData);
+
+/** Generate a formatted string
+ *
+ * This function is used to generate strings from a format. This implementation
+ * uses a user provided function pointer to output the data as it is generated.
+ *
+ * The function supports a subset of the 'printf' string formatting syntax.
  * Allowable insertion types are:
  *
  *  %% - Display a % character. There should be no entry in the variable
@@ -646,29 +554,20 @@ extern Serial *serial;
  *  %s - Display a NUL terminated string from RAM. The matching argument must
  *       be a pointer to a RAM location.
  *
- * @param pStream pointer to the output stream to write to
- * @param cszString pointer to a nul terminated format string.
+ * @param pfnPutC pointer the character output function
+ * @param pData pointer to a user provided data block. This is passed to the
+ *              character output function with each character.
+ * @param cszFormat pointer to a nul terminated format string.
+ * @param args the variadic argument list.
  *
- * @return the number of character actually printed.
+ * @return the number of characters generated.
  */
-int fprintf(OutputStream *pStream, const char *cszString, ...);
+int vprintf(FN_PUTC pfnPutC, void *pData, const char *cszFormat, va_list args);
 
-/** Print a formatted string
+/** Generate a formatted string
  *
- * This function supports a subset of the 'printf' string formatting syntax.
- * Allowable insertion types are:
- *
- *  %% - Display a % character. There should be no entry in the variable
- *       argument list for this entry.
- *  %u - Display an unsigned integer in decimal. The matching argument may
- *       be any 32 bit value.
- *  %x - Display an unsigned integer in hexadecimal. The matching argument may
- *       be any 32 bit value.
- *  %b - Display a single byte in hexadecimal.
- *  %c - Display a single ASCII character. The matching argument may be any 8
- *       bit value.
- *  %s - Display a NUL terminated string from RAM. The matching argument must
- *       be a pointer to a RAM location.
+ * This function uses the @see xprintf function to generate a formatted string
+ * in memory.
  *
  * @param szBuffer pointer to the buffer to place the string in
  * @param length the size of the buffer.
@@ -709,54 +608,43 @@ uint16_t crcData(uint16_t crc, const uint8_t *pData, int length);
 
 /** Shift data out using clocked transfer
  *
- * @param digital the digital interface to use
- * @param data the pin to use for the data transfer
+ * @param polarity the polarity of the SPI clock - true = HIGH, false = LOW
+ * @param phase the phase of the SPI clock - true = HIGH, false = LOW
+ * @param msbFirst true if data should be sent MSB first, false if LSB first.
  * @param clock the pin to use for the clock
- * @param mode the transfer mode (phase and polarity)
+ * @param output the pin to use for the output data
  * @param value the value to send
  * @param bits the number of bits to send
  */
-void shiftOut(Digital *digital, int data, int clock, int mode, uint32_t value, int bits);
+void shiftOut(bool polarity, bool phase, bool msbFirst, PIN clock, PIN output, uint32_t value, int bits);
 
-/** Shift data in using a clocked transfer
+/** Shift data in using clocked transfer
  *
- * @param digital the digital interface to use
- * @param data the pin to use for the data transfer
+ * @param polarity the polarity of the SPI clock - true = HIGH, false = LOW
+ * @param phase the phase of the SPI clock - true = HIGH, false = LOW
+ * @param msbFirst true if data should be sent MSB first, false if LSB first.
  * @param clock the pin to use for the clock
- * @param mode the transfer mode (phase and polarity)
- * @param bits the number of bits to send
+ * @param input the pin to use for the input data
+ * @param bits the number of bits to read
  *
- * @return the data value received
+ * @return the data read
  */
-uint32_t shiftIn(Digital *digital, int data, int clock, int mode, int bits);
+uint32_t shiftIn(bool polarity, bool phase, bool msbFirst, PIN clock, PIN input, int bits);
 
-/** Exchange data in using a clocked transfer
+/** Exchange data using a clocked transfer
  *
- * @param digital the digital interface to use
- * @param in the pin to use for input data
- * @param out the pin to use for output data
+ * @param polarity the polarity of the SPI clock - true = HIGH, false = LOW
+ * @param phase the phase of the SPI clock - true = HIGH, false = LOW
+ * @param msbFirst true if data should be sent MSB first, false if LSB first.
  * @param clock the pin to use for the clock
- * @param mode the transfer mode (phase and polarity)
+ * @param input the pin to use for the input data
+ * @param output the pin to use for the output data
  * @param value the value to send
- * @param bits the number of bits to send
+ * @param bits the number of bits to transfer
  *
- * @return the data value received
+ * @return the data read
  */
-uint32_t shiftInOut(Digital *digital, int in, int out, int clock, int mode, uint32_t value, int bits);
-
-//---------------------------------------------------------------------------
-// Debugging support
-//---------------------------------------------------------------------------
-
-// The debug output stream (may be NULL if not present)
-extern OutputStream *debug;
-
-#ifdef DEBUG
-#  define DBG(msg, ...) \
-     if(debug) { debug->write("DEBUG: "); fprintf(debug, msg, ## __VA_ARGS__); debug->write("\n"); }
-#else
-#  define DBG(msg, ...)
-#endif
+uint32_t shiftInOut(bool polarity, bool phase, bool msbFirst, PIN clock, PIN input, PIN output, uint32_t data, int bits);
 
 //---------------------------------------------------------------------------
 // Application interface
