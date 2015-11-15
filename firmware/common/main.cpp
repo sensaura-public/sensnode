@@ -26,75 +26,6 @@ extern "C" void (**__init_array_end)();
 // Internal implementation
 //---------------------------------------------------------------------------
 
-#define BATTERY_CHECK 60
-#define BATTERY_RETRY 3
-
-/** Reset the indicator
- *
- * Sets counts and values back to zero and ensures the LED is off
- */
-static void resetIndicator() {
-  g_pattern = 0;
-  g_patternIdx = 0;
-  g_patternRepeat = false;
-  g_patternTimer = getTicks();
-  pinWrite(PIN_INDICATOR, false);
-  }
-
-/** Update the indicator with the next bit in the sequence
- */
-static void taskIndicator() {
-  static uint32_t timer = 0;
-  if(g_pattern==0)
-    return; // No pattern
-  if(!timeExpired(g_patternTimer, 125, MILLISECOND))
-    return; // Not yet
-  g_patternTimer = getTicks();
-  // Are we at the end?
-  if(g_patternIdx==16) {
-    if(g_patternRepeat)
-      g_patternIdx = 0;
-    else {
-      resetIndicator();
-      return;
-      }
-    }
-  // Set the current bit
-  pinWrite(PIN_INDICATOR, g_pattern & (0x8000 >> g_patternIdx));
-  g_patternIdx++;
-  }
-
-/** Battery monitoring
- *
- * This task checks the battery level periodically and, if it falls below a
- * user specified level, shuts down the sensor. There is a level of hysterisis
- * involved - the battery must remain below the shutdown level for a number
- * of samples before the shutdown is triggered. This protects against shutting
- * down during high load periods.
- */
-static void taskBattery() {
-  static uint32_t timer = 0;
-  static int count = 0;
-  // Do we have a limit ?
-  if(g_battery==0)
-    return; // No limit
-  // Is it time to check the battery ?
-  if(!timeExpired(timer, BATTERY_CHECK, SECOND))
-    return;
-  timer = getTicks();
-  // Check the battery level
-  if(pinSample(PIN_BATTERY, 1, 3)>=g_battery) {
-    count = 0;
-    return;
-    }
-  // Increment the count
-  count++;
-  if(count>=BATTERY_RETRY) {
-    // TODO: Show indication of low battery
-    shutdown();
-    }
-  }
-
 /** Implements the main loop
  *
  * This processes the network, battery monitoring and application loop. It is
@@ -104,9 +35,9 @@ static void taskBattery() {
  */
 static void mainLoop(bool userTask) {
   // Power management checking
-  taskBattery();
+//  taskBattery();
   // Indicator display
-  taskIndicator();
+//  taskIndicator();
   // TODO: Network processing
   // Application loop
   if(userTask)
@@ -117,18 +48,18 @@ static void mainLoop(bool userTask) {
  */
 int main() {
   // First configure and latch our power pin.
-  pinConfig(PIN_LATCH, DIGITAL_OUTPUT);
+  pinConfig(PIN_LATCH, DIGITAL_OUTPUT, 1);
   pinWrite(PIN_LATCH, true);
   // Call all the constructors
   for(void (**p)() = __init_array_start; p < __init_array_end; ++p)
     (*p)();
   // Set up the rest of the power head pins
-  pinConfig(PIN_INDICATOR, DIGITAL_OUTPUT);
+  pinConfig(PIN_INDICATOR, DIGITAL_OUTPUT, 0);
   pinWrite(PIN_INDICATOR, false);
   pinConfig(PIN_ACTION, DIGITAL_INPUT, WAKEUP);
   pinConfig(PIN_BATTERY, ANALOG);
   // Show we are on (2s indicator LED)
-  indicate(PATTERN_FULL, false);
+//  indicate(PATTERN_FULL, false);
   // TODO: Internal setup
   // Application setup
   setup();
@@ -157,7 +88,7 @@ int main() {
  *               set.
  */
 void indicate(uint16_t pattern, bool repeat) {
-  resetIndicator();
+//  resetIndicator();
   g_pattern = pattern;
   g_patternRepeat = repeat;
   }
@@ -170,6 +101,7 @@ void indicate(uint16_t pattern, bool repeat) {
  */
 void shutdown() {
   pinWrite(PIN_LATCH, false);
+  // Enter endless loop
   while(true);
   }
 

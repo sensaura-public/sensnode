@@ -12,8 +12,14 @@
 
 // Bring in required definitions
 #include <stdint.h>
-#include <stdlib.h>
+#include <stdbool.h>
 #include <stdarg.h>
+#include <string.h>
+
+// All library functions are C callable
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //---------------------------------------------------------------------------
 // Timing and delays
@@ -22,8 +28,6 @@
 /** Time units
  */
 typedef enum {
-  TICK = 0,    //!< Raw ticks (processor dependent)
-  MICROSECOND, //!< 1/1000000 of a second
   MILLISECOND, //!< 1/1000 of a second
   SECOND,      //!< Whole seconds
   } TIMEUNIT;
@@ -90,14 +94,14 @@ void delay(uint32_t duration, TIMEUNIT units);
 
 /** Complete date time record.
  */
-typedef struct _DATETIME {
+struct DATETIME {
   uint16_t m_year;   // 4 digit year
   uint8_t  m_month;  // Month of year (1 to 12)
   uint8_t  m_day;    // Day of month (1 to 31)
   uint8_t  m_hour;   // Hour of day (0 to 23)
   uint8_t  m_minute; // Minute of hour (0 to 59)
   uint8_t  m_second; // Second of minute (0 to 59)
-  } DATETIME;
+  };
 
 /** Get the current date and time according to the RTC
  *
@@ -105,7 +109,7 @@ typedef struct _DATETIME {
  *
  * @return true on success, false on failure.
  */
-bool getDateTime(DATETIME *pDateTime);
+bool getDateTime(struct DATETIME *pDateTime);
 
 /** Set the current date and time in the RTC
  *
@@ -113,7 +117,7 @@ bool getDateTime(DATETIME *pDateTime);
  *
  * @return true on success, false on failure.
  */
-bool setDateTime(DATETIME *pDateTime);
+bool setDateTime(struct DATETIME *pDateTime);
 
 /** Set an alarm
  *
@@ -125,7 +129,7 @@ bool setDateTime(DATETIME *pDateTime);
  *
  * @return true on success, false on failure.
  */
-bool setAlarm(DATETIME *pDateTime);
+bool setAlarm(struct DATETIME *pDateTime);
 
 /** Determine if the date and time are valid
  *
@@ -135,7 +139,7 @@ bool setAlarm(DATETIME *pDateTime);
  *
  * @return true if the values are valid, false otherwise.
  */
-bool isDateTimeValid(DATETIME *pDateTime);
+bool isDateTimeValid(struct DATETIME *pDateTime);
 
 /** Convert a date time structure to a timestamp
  *
@@ -149,7 +153,7 @@ bool isDateTimeValid(DATETIME *pDateTime);
  *         in the structure. If the structure represents a time prior to the
  *         epoch or contains invalid information the return value will be 0.
  */
-uint32_t toTimestamp(DATETIME *pDateTime);
+uint32_t toTimestamp(struct DATETIME *pDateTime);
 
 /** Convert a timestamp to a date time structure
  *
@@ -160,7 +164,7 @@ uint32_t toTimestamp(DATETIME *pDateTime);
  * @param pDateTime pointer to a structure to receive the date and time.
  * @param timestamp the timestamp value to convert.
  */
-void fromTimestamp(DATETIME *pDateTime, uint32_t timestamp);
+void fromTimestamp(struct DATETIME *pDateTime, uint32_t timestamp);
 
 //---------------------------------------------------------------------------
 // System management
@@ -246,11 +250,10 @@ typedef enum {
 /** Pin function modes
  */
 typedef enum {
-  DISABLED,
+  DISABLED = 0,
   ANALOG,
   DIGITAL_INPUT,
   DIGITAL_OUTPUT,
-  SPECIAL_FUNCTION,
   } PIN_MODE;
 
 /** Pin flags
@@ -260,6 +263,29 @@ typedef enum {
   PULLDOWN = 0x02, // Enable internal pulldown (DIGITAL_INPUT only)
   WAKEUP   = 0x04, // Enable wake from sleep (DIGITAL_INPUT only)
   } PIN_FLAG;
+
+/** Determine if a GPIO pin has been configured or not
+ *
+ * This function is used to test if a GPIO pin has already been configure or
+ * if it is available for use. This is mainly for internal use.
+ *
+ * @param pin the GPIO pin to test.
+ *
+ * @return true if the pin has not yet been configured.
+ */
+bool pinAvailable(PIN pin);
+
+/** Mark a pin as being used
+ *
+ * This does no actual configuration of the pin but simply marks it as being
+ * in use and prevents future configuration. This is used internally by the
+ * I2C interface (which disables the use of PIN0 and PIN1 for GPIO use) and
+ * can be used by application code if internal peripherals are being used on
+ * the pin.
+ *
+ * @param pin the GPIO pin to mark as being used.
+ */
+void pinMarkUsed(PIN pin);
 
 /** Configure a GPIO pin
  *
@@ -311,7 +337,7 @@ void pinWrite(PIN pin, bool value);
  * @return the sample read from the pin. This will be shifted left if needed
  *         to fully occupy a 16 bit value.
  */
-uint16_t pinSample(PIN pin, int average = 1, int skip = 0);
+uint16_t pinSample(PIN pin, int average, int skip);
 
 //---------------------------------------------------------------------------
 // SPI Operations
@@ -376,41 +402,21 @@ void spiTransfer(const uint8_t *pOutput, uint8_t *pInput, int count);
  * This function sets up the I2C interface on PIN0/PIN1 and disables the use
  * of those pins for general purpose IO. Future calls to pinConfig() for
  * either pin will fail.
+ *
+ * @return true if the configuration succeeded, false if I2C is not available
+ *         or PIN0/PIN1 have already been configured.
  */
-void i2cConfig();
-
-/** Write a bit stream to the I2C device
- *
- * This function is used to send a sequence of bits to the i2c slave device
- * identified by the address.
- *
- * @param address the address of the slave device
- * @param data the data to send, the lowest 'count' bits will be sent in
- *             MSB order.
- * @param count the number of bits to write.
- */
-void i2cWriteBits(uint8_t address, uint32_t data, int count);
-
-/** Read a bit stream from the I2C device
- *
- * This function is used to read a sequence of bits from the i2c slave
- * identified by the address.
- *
- * @param address the address of the slave device
- * @param count the number of bits to read
- *
- * @return a 32 bit value containing the bits read in the least significant
- *         bits.
- */
-uint32_t i2cReadBits(uint8_t address, int count);
+bool i2cConfig();
 
 /** Write a sequence of byte values to the i2c slave
  *
  * @param address the address of the slave device
  * @param pData pointer to a buffer containing the data to send
  * @param count the number of bytes to transmit
+ *
+ * @return number of bytes sent
  */
-void i2cWriteBytes(uint8_t address, const uint8_t *pData, int count);
+int i2cSendTo(uint8_t address, const uint8_t *pData, int count);
 
 /** Read a sequence of bytes from the i2c slave
  *
@@ -420,7 +426,7 @@ void i2cWriteBytes(uint8_t address, const uint8_t *pData, int count);
  *
  * @return the number of bytes read from the slave.
  */
-int i2cReadBytes(uint8_t address, uint8_t *pData, int count);
+int i2cReadFrom(uint8_t address, uint8_t *pData, int count);
 
 //---------------------------------------------------------------------------
 // Serial port operations
@@ -440,7 +446,7 @@ typedef enum {
   B115200
   } BAUDRATE;
 
-/** Initialise the serial port
+/** Configure the serial port
  *
  * The serial port is always operated in 8 bit mode with a single stop bit
  * (8N1). The core initialisation will set the initial baudrate to 57600 but
@@ -448,7 +454,7 @@ typedef enum {
  *
  * @param rate the requested baud rate
  */
-void serialInit(BAUDRATE rate);
+void serialConfig(BAUDRATE rate);
 
 /** Write a single character to the serial port
  *
@@ -471,11 +477,11 @@ void serialWrite(uint8_t ch);
  *
  * @return the number of bytes sent.
  */
-int serialPrint(const char *cszString, int length = -1);
+int serialPrint(const char *cszString, int length);
 
 /** Print a formatted string to the serial port.
  *
- * This function utilises the @see vprintf function to transmit a formatted
+ * This function utilises the @see vformat function to transmit a formatted
  * string to the serial port.
  *
  * The function is blocking and will not return until all characters have been
@@ -485,30 +491,28 @@ int serialPrint(const char *cszString, int length = -1);
  *
  * @return the number of bytes sent.
  */
-int serialPrintF(const char *cszString, ...);
+int serialFormat(const char *cszString, ...);
 
-/** Get the number of bytes available in the input buffer.
- *
- * This function determines how much data is available to read from the serial
- * port.
+/** Determines if data is available to be read
  *
  * @return the number of bytes available to read immediately.
  */
-int serialAvailable();
+bool serialAvailable();
 
 /** Read a single byte from the serial port
  *
- * This function is non-blocking, if no data is available to read the function
- * will return a value < 0.
+ * If no data is available this function will block until the next character
+ * is received. Use 'serialAvailable()' to determine if data can be read
+ * without blocking.
  *
- * @return the value of the byte read or a value < 0 if no data is available.
+ * @return the value of the byte read
  */
 int serialRead();
 
 // Simple macro to output debug information on the serial port.
 #ifdef DEBUG
 #  define DBG(msg, ...) \
-     serialPrintF("DEBUG: "), serialPrintF(msg, ## __VA_ARGS__), serialWrite('\n')
+     serialFormat("DEBUG: "), serialFormat(msg, ## __VA_ARGS__), serialWrite('\n')
 #else
 #  define DBG(msg, ...)
 #endif
@@ -522,7 +526,7 @@ int serialRead();
 
 /** Function prototype for writing a single byte
  *
- * This function prototype is used by the @see vprintf function to output
+ * This function prototype is used by the @see vformat function to output
  * formatted data.
  *
  * @param ch the character to write
@@ -536,38 +540,37 @@ typedef bool (*FN_PUTC)(char ch, void *pData);
  *
  * This function is used to generate strings from a format. This implementation
  * uses a user provided function pointer to output the data as it is generated.
+ * Be aware that this is not a direct replacement for 'printf()' but provides
+ * similar (but limited) functionality.
  *
- * The function supports a subset of the 'printf' string formatting syntax.
- * Allowable insertion types are:
+ * A format string uses the # character to indicate insertions, the character
+ * immediately following the # determines the size and output format of the
+ * insertion value as follows:
  *
- *  %% - Display a % character. There should be no entry in the variable
- *       argument list for this entry.
- *  %u - Display an unsigned integer in decimal. The matching argument may
- *       be any 16 bit value.
- *  %U - Display an unsigned integer in decimal. The matching argument may
- *       be any 32 bit value.
- *  %x - Display an unsigned integer in hexadecimal. The matching argument may
- *       be any 16 bit value.
- *  %X - Display an unsigned integer in hexadecimal. The matching argument may
- *       be any 32 bit value.
- *  %c - Display a single ASCII character. The matching argument may be any 8
- *       bit value.
- *  %s - Display a NUL terminated string from RAM. The matching argument must
- *       be a pointer to a RAM location.
+ *   ## - insert a # character, no value parameter is required.
+ *   #c - insert a single ASCII character. Expects a matching 'char' parameter.
+ *   #s - insert a NUL terminated string. Expects a matching 'const char *' parameter.
+ *   #i - insert a decimal signed integer. Expects a matching 'int' parameter.
+ *   #u - insert a decimal unsigned integer. Expects a matching 'unsigned' parameter.
+ *   #l - insert a decimal signed long. Expects a matching 'long' parameter.
+ *   #U - insert a decimal unsigned long. Expects a matching 'unsigned long' parameter.
+ *   #b - insert a two digit hex byte. Expects a matching 'char' parameter.
+ *   #w - insert a four digit hex byte. Expects a matching 'unsigned' parameter.
+ *   #d - insert a eight digit hex byte. Expects a matching 'unsigned long' parameter.
  *
  * @param pfnPutC pointer the character output function
  * @param pData pointer to a user provided data block. This is passed to the
  *              character output function with each character.
- * @param cszFormat pointer to a nul terminated format string.
+ * @param cszFormat pointer to a NUL terminated format string.
  * @param args the variadic argument list.
  *
  * @return the number of characters generated.
  */
-int vprintf(FN_PUTC pfnPutC, void *pData, const char *cszFormat, va_list args);
+int vformat(FN_PUTC pfnPutC, void *pData, const char *cszFormat, va_list args);
 
 /** Generate a formatted string
  *
- * This function uses the @see xprintf function to generate a formatted string
+ * This function uses the @see vformat function to generate a formatted string
  * in memory.
  *
  * @param szBuffer pointer to the buffer to place the string in
@@ -578,7 +581,7 @@ int vprintf(FN_PUTC pfnPutC, void *pData, const char *cszFormat, va_list args);
  *         were written. If this value is equal to length the resulting
  *         string will not be NUL terminated.
  */
-int sprintf(char *szBuffer, int length, const char *cszString, ...);
+int sformat(char *szBuffer, int length, const char *cszString, ...);
 
 /** Initialise the CRC calculation
  *
@@ -667,6 +670,10 @@ void setup();
  * the amount of time spent in the function itself.
  */
 void loop();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __SENSNODE_H */
 

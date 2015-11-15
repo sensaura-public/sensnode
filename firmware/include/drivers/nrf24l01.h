@@ -14,7 +14,7 @@ class NRF24L01 {
   public:
     /** Initialise the driver on a specific SPI interface
      */
-    bool init(SPI *pSPI, DIGITAL_PIN select);
+    bool init(PIN csn, PIN select);
   }
 
 #endif /* __NRF24L01_H */

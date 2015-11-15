@@ -11,14 +11,57 @@
 // Bring in required definitions
 #include <sensnode.h>
 
+class MCP23X08 {
+  public:
+    /** Initialise the digital pin interface
+     *
+     * Configure the interface prior to use. Note that the core implementations
+     * are initialised at start up and do not require explicit initialisation by
+     * the application.
+     *
+     * @return true if the initialise succeeded.
+     */
+    virtual bool init() = 0;
+
+    /** Configure a GPIO pin
+     *
+     * @param pin the pin to configure
+     * @param mode the requested mode for the pin
+     * @param flags optional flags for the pin.
+     *
+     * @return true if the pin was configured as requested.
+     */
+    virtual bool pinConfig(uint8_t pin, PIN_MODE mode, uint8_t flags) = 0;
+
+    /** Read the value of a digital pin.
+     *
+     * To use this function the pin must be configured as DIGITAL_INPUT. If the pin
+     * was configured for a different mode the result will always be false.
+     *
+     * @param pin the pin to read
+     *
+     * @return the current state of the pin.
+     */
+    virtual bool pinRead(uint8_t pin) = 0;
+
+    /** Change the state of a digital pin.
+     *
+     * To use this function the pin must be configured as DIGITAL_OUTPUT. If the
+     * pin was configured for a different mode the function will have no effect.
+     *
+     * @param pin the pin to change the state of
+     * @param value the value to set the pin to (true = high, false = low)
+     */
+    virtual void pinWrite(uint8_t pin, bool value) = 0;
+  }
+
 /** Digital interface for the I2C version of the MCP23008 expander
  *
  * Provides access to the 8 digital pins of the IO expander through the standard
  * digital interface.
  */
-class MCP23008 : public Digital {
+class MCP23008 : public MCP23X08 {
   private:
-    I2C    *m_i2c;     // The I2C interface to use
     uint8_t m_address; // Slave address of the expander
 
   public:
@@ -27,10 +70,9 @@ class MCP23008 : public Digital {
      * The constructor specifies the communication devices to use to talk to
      * the target chip. No significant initialisation is done.
      *
-     * @param i2c the I2C interface to use to communicate with the chip
      * @param address the address of the target device.
      */
-    MCP23008(I2C *i2c, uint8_t address);
+    MCP23008(uint8_t address);
 
     /** Initialise the digital pin interface
      *
@@ -42,37 +84,36 @@ class MCP23008 : public Digital {
      */
     virtual bool init();
 
-    /** Determine the number of pins available
+    /** Configure a GPIO pin
      *
-     * @return the number of pins supported by the interface.
+     * @param pin the pin to configure
+     * @param mode the requested mode for the pin
+     * @param flags optional flags for the pin.
+     *
+     * @return true if the pin was configured as requested.
      */
-    virtual int pins();
+    virtual bool pinConfig(uint8_t pin, PIN_MODE mode, uint8_t flags);
 
-    /** Initialise a pin for digital input or output
+    /** Read the value of a digital pin.
      *
-     * @param pin the digital pin to configure
-     * @param dir the direction of the pin (input or output)
-     * @param pullup enable or disable the pull up resistor on the pin
+     * To use this function the pin must be configured as DIGITAL_INPUT. If the pin
+     * was configured for a different mode the result will always be false.
      *
-     * @return true if the pin was configured as requested, false if the pin is
-     *         not available or could not be configured.
+     * @param pin the pin to read
+     *
+     * @return the current state of the pin.
      */
-    virtual bool init(int pin, IODIR dir, bool pullup = false);
+    virtual bool pinRead(uint8_t pin);
 
-    /** Read the current value of the digital pin
+    /** Change the state of a digital pin.
      *
-     * @param pin the digital pin to read
+     * To use this function the pin must be configured as DIGITAL_OUTPUT. If the
+     * pin was configured for a different mode the function will have no effect.
      *
-     * @return true if the pin is currently 'high', false if 'low'
+     * @param pin the pin to change the state of
+     * @param value the value to set the pin to (true = high, false = low)
      */
-    virtual bool read(int pin);
-
-    /** Write a value to the digital pin
-     *
-     * @param pin the digital pin to write
-     * @param value the new value of the pin - true for 'high', false for 'low'
-     */
-    virtual void write(int pin, bool value);
+    virtual void pinWrite(uint8_t pin, bool value);
   };
 
 /** Digital interface for the SPI version of the MCP23S08 expander
@@ -80,11 +121,9 @@ class MCP23008 : public Digital {
  * Provides access to the 8 digital pins of the IO expander through the standard
  * digital interface.
  */
-class MCP23S08 : public Digital {
+class MCP23S08 : public MCP23X08 {
   private:
-    SPI     *m_spi;     // The SPI interface to use
-    Digital *m_digital; // The digital interface for the select pin
-    int      m_select;  // The select pin to use for the chip
+    PIN m_select;  // The select pin to use for the chip
 
   public:
     /** Constructor
@@ -92,11 +131,9 @@ class MCP23S08 : public Digital {
      * The constructor specifies the communication devices to use to talk to
      * the target chip. No significant initialisation is done.
      *
-     * @param spi the SPI interface used to communicate with the device
-     * @param digital the Digital interface used to control the select pin
      * @param select the pin number to use for device selection
      */
-    MCP23S08(SPI *spi, Digital *digital, int select);
+    MCP23S08(PIN select);
 
     /** Initialise the digital pin interface
      *
@@ -108,37 +145,36 @@ class MCP23S08 : public Digital {
      */
     virtual bool init();
 
-    /** Determine the number of pins available
+    /** Configure a GPIO pin
      *
-     * @return the number of pins supported by the interface.
+     * @param pin the pin to configure
+     * @param mode the requested mode for the pin
+     * @param flags optional flags for the pin.
+     *
+     * @return true if the pin was configured as requested.
      */
-    virtual int pins();
+    virtual bool pinConfig(uint8_t pin, PIN_MODE mode, uint8_t flags);
 
-    /** Initialise a pin for digital input or output
+    /** Read the value of a digital pin.
      *
-     * @param pin the digital pin to configure
-     * @param dir the direction of the pin (input or output)
-     * @param pullup enable or disable the pull up resistor on the pin
+     * To use this function the pin must be configured as DIGITAL_INPUT. If the pin
+     * was configured for a different mode the result will always be false.
      *
-     * @return true if the pin was configured as requested, false if the pin is
-     *         not available or could not be configured.
+     * @param pin the pin to read
+     *
+     * @return the current state of the pin.
      */
-    virtual bool init(int pin, IODIR dir, bool pullup = false);
+    virtual bool pinRead(uint8_t pin);
 
-    /** Read the current value of the digital pin
+    /** Change the state of a digital pin.
      *
-     * @param pin the digital pin to read
+     * To use this function the pin must be configured as DIGITAL_OUTPUT. If the
+     * pin was configured for a different mode the function will have no effect.
      *
-     * @return true if the pin is currently 'high', false if 'low'
+     * @param pin the pin to change the state of
+     * @param value the value to set the pin to (true = high, false = low)
      */
-    virtual bool read(int pin);
-
-    /** Write a value to the digital pin
-     *
-     * @param pin the digital pin to write
-     * @param value the new value of the pin - true for 'high', false for 'low'
-     */
-    virtual void write(int pin, bool value);
+    virtual void pinWrite(uint8_t pin, bool value);
   };
 
 #endif /* __MCP23008_H */

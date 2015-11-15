@@ -17,10 +17,6 @@
 extern "C" {
 #endif
 
-/** Main program
- */
-int main();
-
 // Define some bitmasks
 #define BIT0 (1 << 0)
 #define BIT1 (1 << 1)
@@ -78,6 +74,26 @@ int main();
 #else
 #  error "Unsupported or undefined target platform"
 #endif
+
+//---------------------------------------------------------------------------
+// Low level initialisation
+//---------------------------------------------------------------------------
+
+/** Initialise the GPIO subsystem
+ */
+void initGPIO();
+
+/** Initialise the SPI subsystem
+ */
+void initSPI();
+
+/** Initialise the timer subsystem
+ */
+void initTICK();
+
+/** Initialise the serial hardware
+ */
+void initSERIAL();
 
 #ifdef __cplusplus
 } /* extern "C" */

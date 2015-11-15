@@ -6,6 +6,7 @@
 * Provides the GPIO interface functions for the XMC1100 based board.
 *---------------------------------------------------------------------------*/
 #include <sensnode.h>
+#include <platform.h>
 
 /** Pin capability flags
  */
@@ -33,7 +34,7 @@ typedef struct _PININFO {
  * This table maps pin IO ports and capabilities to it's current state. There
  * is one entry per pin (the pins defined in the PIN enum).
  */
-static PININFO g_pininfo[] {
+static PININFO g_pininfo[] = {
   { CAN_INPUT|CAN_OUTPUT|CAN_INTERNAL, 0, 0, 7 }, // PIN0 (SDA)
   { CAN_INPUT|CAN_OUTPUT|CAN_INTERNAL, 0, 0, 8 }, // PIN1 (SCL)
   { CAN_INPUT|CAN_OUTPUT|CAN_ANALOG,   0, 0, 0 }, // PIN2
@@ -64,6 +65,7 @@ static PININFO g_pininfo[] {
  * @return true if the pin was configured as requested.
  */
 bool pinConfig(PIN pin, PIN_MODE mode, uint8_t flags) {
+/* TODO: Revisit this
   if(pin>=PINMAX)
     return false;
   // Configure the pin
@@ -92,6 +94,7 @@ bool pinConfig(PIN pin, PIN_MODE mode, uint8_t flags) {
     default:
       return false;
     }
+*/
   // TODO: Implement this
   return false;
   }

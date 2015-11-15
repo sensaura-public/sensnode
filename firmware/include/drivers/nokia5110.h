@@ -14,7 +14,7 @@ class Nokia5110 {
   public:
     /** Initialise the driver on a specific SPI interface
      */
-    bool init(SPI *pSPI, DIGITAL_PIN select);
+    bool init(PIN reset, PIN cd, PIN select);
   }
 
 #endif /* __NOKIA5110_H */
