@@ -27,7 +27,7 @@ OBJECTS = $(patsubst %.cpp,%.o,$(wildcard common/*.cpp))
 OBJECTS += $(patsubst %.cpp,%.o,${shell find drivers -name '*.cpp' -type f -print})
 
 # Target specific definitions
-TARGET ?= lpc1114
+TARGET ?= xmc1100
 ifeq (,$(wildcard $(TARGET)/Makefile.inc))
     $(error No definitions for target $(TARGET))
 endif

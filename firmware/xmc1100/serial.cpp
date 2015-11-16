@@ -27,27 +27,24 @@ void serialWrite(uint8_t ch) {
   // TODO: Implement this
   }
 
-/** Get the number of bytes available in the input buffer.
- *
- * This function determines how much data is available to read from the serial
- * port.
+/** Determines if data is available to be read
  *
  * @return the number of bytes available to read immediately.
  */
-int serialAvailable() {
+bool serialAvailable() {
   // TODO: Implement this
-  return 0;
+  return false;
   }
 
 /** Read a single byte from the serial port
  *
- * This function is non-blocking, if no data is available to read the function
- * will return a value < 0.
+ * If no data is available this function will block until the next character
+ * is received. Use 'serialAvailable()' to determine if data can be read
+ * without blocking.
  *
- * @return the value of the byte read or a value < 0 if no data is available.
+ * @return the value of the byte read
  */
 int serialRead() {
-  // TODO: Implement this
   return -1;
   }
 

@@ -6,20 +6,16 @@
 * Provides a Digital interface using the 8 bit Microchip IO expanders.
 *---------------------------------------------------------------------------*/
 #include <sensnode.h>
-#include <drivers/mcp23008.h>
+#include <drivers/MCP23S08.h>
 
 /** Constructor
  *
  * The constructor specifies the communication devices to use to talk to
  * the target chip. No significant initialisation is done.
  *
- * @param spi the SPI interface used to communicate with the device
- * @param digital the Digital interface used to control the select pin
- * @param select the pin number to use for device selection
+ * @param select the pin to use to select the SPI device
  */
-MCP23S08::MCP23S08(SPI *spi, Digital *digital, int select) {
-  m_spi = spi;
-  m_digital = digital;
+MCP23S08::MCP23S08(PIN select) {
   m_select = select;
   }
 
@@ -36,45 +32,42 @@ bool MCP23S08::init() {
   return false;
   }
 
-/** Determine the number of pins available
+/** Configure a GPIO pin
  *
- * @return the number of pins supported by the interface.
+ * @param pin the pin to configure
+ * @param mode the requested mode for the pin
+ * @param flags optional flags for the pin.
+ *
+ * @return true if the pin was configured as requested.
  */
-int MCP23S08::pins() {
-  return 8;
-  }
-
-/** Initialise a pin for digital input or output
- *
- * @param pin the digital pin to configure
- * @param dir the direction of the pin (input or output)
- * @param pullup enable or disable the pull up resistor on the pin
- *
- * @return true if the pin was configured as requested, false if the pin is
- *         not available or could not be configured.
- */
-bool MCP23S08::init(int pin, IODIR dir, bool pullup) {
+bool MCP23S08::pinConfig(uint8_t pin, PIN_MODE mode, uint8_t flags) {
   // TODO: Implement this
   return false;
   }
 
-/** Read the current value of the digital pin
+/** Read the value of a digital pin.
  *
- * @param pin the digital pin to read
+ * To use this function the pin must be configured as DIGITAL_INPUT. If the pin
+ * was configured for a different mode the result will always be false.
  *
- * @return true if the pin is currently 'high', false if 'low'
+ * @param pin the pin to read
+ *
+ * @return the current state of the pin.
  */
-bool MCP23S08::read(int pin) {
+bool MCP23S08::pinRead(uint8_t pin) {
   // TODO: Implement this
-  return false;
+  return false
   }
 
-/** Write a value to the digital pin
+/** Change the state of a digital pin.
  *
- * @param pin the digital pin to write
- * @param value the new value of the pin - true for 'high', false for 'low'
+ * To use this function the pin must be configured as DIGITAL_OUTPUT. If the
+ * pin was configured for a different mode the function will have no effect.
+ *
+ * @param pin the pin to change the state of
+ * @param value the value to set the pin to (true = high, false = low)
  */
-void MCP23S08::write(int pin, bool value) {
+void MCP23S08::pinWrite(uint8_t pin, bool value) {
   // TODO: Implement this
   }
 

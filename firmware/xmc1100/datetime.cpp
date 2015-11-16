@@ -6,7 +6,7 @@
 * Provides the hardware specific functions for the RTC module on the XMC1100.
 *---------------------------------------------------------------------------*/
 #include <sensnode.h>
-#include <hardware.h>
+#include <platform.h>
 
 /** Get the current date and time according to the RTC
  *

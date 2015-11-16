@@ -38,25 +38,26 @@ static bool serial_putc(char ch, void *pData) {
  * @return the number of bytes sent.
  */
 int serialPrint(const char *cszString, int length) {
-  // Check arguments
   if(cszString==NULL)
-    return 0;
-  // Send data
-  int index;
+    cszString = "(null)";
   if(length<0) {
-    for(index=0;cszString[index];index++)
-      serialWrite(cszString[index]);
+    length = 0;
+    while(*cszString) {
+      serialWrite(*cszString);
+      cszString++;
+      length++;
+      }
     }
   else {
-    for(index=0;index<length;index++)
-      serialWrite(cszString[index]);
+    for(int i=0; i<length; i++)
+      serialWrite(cszString[i]);
     }
-  return index;
+  return length;
   }
 
 /** Print a formatted string to the serial port.
  *
- * This function utilises the @see vprintf function to transmit a formatted
+ * This function utilises the @see vformat function to transmit a formatted
  * string to the serial port.
  *
  * The function is blocking and will not return until all characters have been
@@ -66,10 +67,10 @@ int serialPrint(const char *cszString, int length) {
  *
  * @return the number of bytes sent.
  */
-int serialPrintF(const char *cszString, ...) {
+int serialFormat(const char *cszString, ...) {
   va_list args;
   va_start(args, cszString);
-  int result = vprintf((FN_PUTC)&serial_putc, NULL, cszString, args);
+  int result = vformat((FN_PUTC)&serial_putc, NULL, cszString, args);
   va_end(args);
   return result;
   }

@@ -16,7 +16,7 @@
 /** Calculate the time difference between two tick counts.
  *
  * This function will convert the difference between two tick count values into
- * an actualy time period. Tick count wrap around is accounted for. The return
+ * an actual time period. Tick count wrap around is accounted for. The return
  * value is the number of whole units rounded down.
  *
  * @param start the tick count at the start of the period
@@ -26,25 +26,20 @@
  * @return the amount of elapsed time in whole units.
  */
 uint32_t timeElapsed(uint32_t start, uint32_t end, TIMEUNIT units) {
-  // Calculate the duration in ticks
-  uint32_t ticks;
-  if(start<end)
-    ticks = end - start;
+  uint32_t elapsed;
+  if(start>end) // Handle wrap around
+    elapsed = ((uint32_t)-1) - end + start;
   else
-    ticks = (TICKS_MAX - start) + end;
-  // Convert to the appropriate units
+    elapsed = end - start;
+  // Convert to appropriate time period
   switch(units) {
-    case MICROSECOND:
-      ticks = ticks / (TICKS_PER_SECOND / 1000000L);
-      break;
     case MILLISECOND:
-      ticks = ticks / (TICKS_PER_SECOND / 1000);
       break;
     case SECOND:
-      ticks = ticks / TICKS_PER_SECOND;
+      elapsed = elapsed / 1000;
       break;
     }
-  return ticks;
+  return elapsed;
   }
 
 /** Determine if the specified amount of time has expired.
@@ -61,6 +56,6 @@ uint32_t timeElapsed(uint32_t start, uint32_t end, TIMEUNIT units) {
  *              point.
  */
 bool timeExpired(uint32_t reference, uint32_t duration, TIMEUNIT units) {
-  return timeElapsed(reference, getTicks(), units) > duration;
+  return timeElapsed(reference, getTicks(), units)>=duration;
   }
 
