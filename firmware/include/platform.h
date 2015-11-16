@@ -1,13 +1,15 @@
 /*---------------------------------------------------------------------------*
 * Platform specific definitions
-*----------------------------------------------------------------------------*
-* 01-Sep-2015 ShaneG
-*
-* This file defines the common functions and structures used by the platform
-* and bring in hardware specific definitions for the target processor
 *---------------------------------------------------------------------------*/
 #ifndef __PLATFORM_H
 #define __PLATFORM_H
+
+/** @file platform.h
+ *
+ * This file defines the common hardware level functions and structures used by
+ * the platform and brings in hardware specific definitions for the target
+ * processor.
+ */
 
 // Required definitions
 #include <stdint.h>

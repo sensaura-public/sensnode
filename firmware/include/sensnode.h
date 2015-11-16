@@ -1,14 +1,18 @@
 /*--------------------------------------------------------------------------*
 * SensNode Core Library
-*---------------------------------------------------------------------------*
-* 31-Aug-2015 ShaneG
-*
-* Defines a common set of functions and structures to use with SensNode
-* compatible boards. Although not mandatory to use for SensNode development
-* the goal is to make it easy to switch between boards and have a common API.
----------------------------------------------------------------------------*/
+*--------------------------------------------------------------------------*/
 #ifndef __SENSNODE_H
 #define __SENSNODE_H
+
+/** @file sensnode.h
+ *
+ * Primary include file for the SensNode library functions.
+ *
+ *
+ * Defines a common set of functions and structures to use with SensNode
+ * compatible boards. Although not mandatory to use for SensNode development
+ * the goal is to make it easy to switch between boards and have a common API.
+ */
 
 // Bring in required definitions
 #include <stdint.h>
@@ -95,12 +99,12 @@ void delay(uint32_t duration, TIMEUNIT units);
 /** Complete date time record.
  */
 struct DATETIME {
-  uint16_t m_year;   // 4 digit year
-  uint8_t  m_month;  // Month of year (1 to 12)
-  uint8_t  m_day;    // Day of month (1 to 31)
-  uint8_t  m_hour;   // Hour of day (0 to 23)
-  uint8_t  m_minute; // Minute of hour (0 to 59)
-  uint8_t  m_second; // Second of minute (0 to 59)
+  uint16_t m_year;   //!< 4 digit year
+  uint8_t  m_month;  //!< Month of year (1 to 12)
+  uint8_t  m_day;    //!< Day of month (1 to 31)
+  uint8_t  m_hour;   //!< Hour of day (0 to 23)
+  uint8_t  m_minute; //!< Minute of hour (0 to 59)
+  uint8_t  m_second; //!< Second of minute (0 to 59)
   };
 
 /** Get the current date and time according to the RTC

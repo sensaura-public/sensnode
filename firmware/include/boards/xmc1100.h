@@ -1,22 +1,22 @@
-// xmc1100.h
-
-// LPC low level all-in-one header file for Infineon XMC1100
-// principally targeted at xmc-2go dev kit
-// Written by Frank Duignan
-// Latest version available at http://eleceng.dit.ie/frank/arm/cortex/xmc1100.h
-// Derived from XMC1100 Reference manual from Infineon
-// Naming convention: Register names are as described in Reference Manual
-// Initial version did not include debug registers (may change in future)
-// In the case of peripheral registers, the peripheral name is pre-pended e.g.
-// WDT_ID is used rather than ID which might conflict with some other system
-// No claims are made for the suitability, accuracy or otherwise of this file
-// for any application
-// Define some bitmasks
-
-// Changelog:
-// 1/8/2014: Corrected HW_SEL offset on GPIO ports
+/*--------------------------------------------------------------------------*
+* XMC1100 Bare Metal definitions.
+*--------------------------------------------------------------------------*/
 #ifndef __XMC1100_H
 #define __XMC1100_H
+
+/** @file xmc1100.h
+ *
+ * Low level all-in-one header file for the Infineon XMC1100.
+ *
+ * Defines system parameters and special function registers for the XMC1100
+ * to allow development without CMSIS or vendor specific libraries. Register
+ * names are as described in Reference Manual. In the case of peripheral
+ * registers, the peripheral name is pre-pended e.g. WDT_ID is used rather
+ * than ID which might conflict with another peripheral.
+ *
+ * Original version by Frank Duignan which can be
+ * <a href="http://eleceng.dit.ie/frank/arm/cortex/">found here</a>.
+ */
 
 // System ticks configuration
 #define TICKS_PER_SECOND 10000L

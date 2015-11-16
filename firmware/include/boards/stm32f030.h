@@ -1,17 +1,20 @@
-// stm32f03xx low level header file
-// No guarantees or claims of suitability,reliability or safety of any kind are implied or given
-// All the values below were taken from the STM32F030xx reference manual (RM0360)
-// Also include macros for enabling and disabling global interrupts
-// Written by Frank Duignan
-// stm32f030xx.h
-//
-// Changelog
-// 15/7/2015: Added 8 bit version of data register for SPI1 and SPI2 (SPI1_DR8, SPI2_DR8)
-//	   	      Changed default SPI data register data size to 16bit
-//			  Added dependancy on stdint.h for basic data types
-// First written: 10/11/14
+/*--------------------------------------------------------------------------*
+* STM32F030 Bare Metal definitions.
+*--------------------------------------------------------------------------*/
 #ifndef __STM32F030_H
 #define __STM32F030_H
+
+/** @file stm32f030.h
+ *
+ * Low level all-in-one header file for the STM32F030 ARM CPU.
+ *
+ * Defines system parameters and special function registers for the STM32F030
+ * to allow development without CMSIS or vendor specific libraries. Register
+ * names are as described in Reference Manual.
+ *
+ * Original version by Frank Duignan which can be
+ * <a href="http://eleceng.dit.ie/frank/arm/cortex/">found here</a>.
+ */
 
 // Macros to enable/disable global interrupts
 #define cpu_sleep() asm(" wfi ")
