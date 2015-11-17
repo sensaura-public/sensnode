@@ -1,0 +1,3 @@
+{
+  "documented": [ "file", "enum", "struct", "class", "method", "function" ]
+}
